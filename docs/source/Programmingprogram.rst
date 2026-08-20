@@ -76,6 +76,7 @@ B. Select the corresponding program for burning according to the image below.
    <div style="margin-top: 30px;"></div>
 
 C. Select the firmware version as shown in the image.
+
 .. image:: _static/program/15.lafvin.png
    :width: 800
    :align: center
