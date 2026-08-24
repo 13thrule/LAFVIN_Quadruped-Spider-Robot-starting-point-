@@ -32,21 +32,59 @@ const int Servo_Prg_1[][ALLMATRIX] PROGMEM = {
   {  60,  90,  90, 120, 120,  90,  90,  60, 500 }, // standby
 };
 
-// Forward
-const int Servo_Prg_2_Step = 11;
+// Forward -- wave/crawl gait (one leg lifts at a time, the other three stay
+// grounded), replacing the original diagonal-pair trot. A trot is only
+// dynamically stable (2 feet grounded mid-swing, depends on timing/momentum
+// to not tip); a wave gait keeps the center of mass inside the support
+// triangle of 3 grounded feet at every instant, by geometry alone. Same
+// hardware (2 servos/leg: swing + lift, no knee), same swing/lift magnitudes
+// already proven safe in the old trot -- only the sequencing changed.
+//
+// Each leg's turn is 4 sub-steps:
+//   a) weight-shift: the 3 OTHER (still grounded) legs' swing servos nudge
+//      by a small amount (matches this gait's own existing "stance/propel"
+//      motion -- swinging a *planted* leg moves the body, not the foot),
+//      biasing the body toward the centroid of those 3 feet before the 4th
+//      leg leaves the ground.
+//   b) lift: the active leg's foot servo raises (unloaded from here on).
+//   c) recover: the active leg's swing servo repositions forward, by 3x a
+//      single weight-shift nudge, so a full cycle nets to zero drift per
+//      leg (3 small propel nudges from the other legs' turns cancel one
+//      recovery swing) -- confirmed by hand-tracing all 8 channels back to
+//      the identical starting pose after all 4 legs have gone.
+//   d) plant: the active leg's foot servo lowers back down.
+// Order alternates the original diagonal pairing (RF, LF, LR, RR) so the
+// support triangle stays as large as possible between consecutive lifts.
+//
+// Timing is deliberately left at the original 200ms/step pace for this
+// first draft -- more steps (16 vs. the old 11) means this is slower
+// overall than the old trot, which is the expected stability/speed
+// trade-off of a wave gait. Speed tuning (e.g. faster timing specifically
+// for the unloaded recover sub-steps, once this pattern is confirmed
+// stable on hardware) is intentionally a separate, later, incremental
+// change -- not bundled in with this gait-pattern change.
+const int Servo_Prg_2_Step = 16;
 const int Servo_Prg_2[][ALLMATRIX] PROGMEM = {
   // G14, G12, G13, G15, G16,  G5,  G4,  G2,  ms
-  {  70,  90,      90, 110, 110,  90,  90,  70, 200 }, // standby
-  {  90,  90,      90, 110, 110,  90,  45,  90, 200 }, // leg1,4 up; leg4 fw
-  {  70,  90,      90, 110, 110,  90,  45,  70, 200 }, // leg1,4 down
-  {  70,  90,      90,  90,  90,  90,  45,  70, 200 }, // leg2,3 up
-  {  70,  45 - 6, 135 + 6,  90,  90,  90,  90,  70, 200 }, // leg1,4 back; leg2 fw
-  {  70,  45 - 6, 135 + 6, 110, 110,  90,  90,  70, 200 }, // leg2,3 down
-  {  90,  90,     135 + 6, 110, 110,  90,  90,  90, 200 }, // leg1,4 up; leg1 fw
-  {  90,  90,      90, 110, 110, 135,  90,  90, 200 }, // leg2,3 back
-  {  70,  90,      90, 110, 110, 135,  90,  70, 200 }, // leg1,4 down
-  {  70,  90,      90, 110,  90, 135,  90,  70, 200 }, // leg3 up
-  {  70,  90,      90, 110, 110,  90,  90,  70, 200 }, // leg3 fw down
+  {  70,  90,  75, 110, 110, 105, 105,  70, 200 }, // RF turn: shift RR/LF/LR
+  {  90,  90,  75, 110, 110, 105, 105,  70, 200 }, // RF foot up
+  {  90, 135,  75, 110, 110, 105, 105,  70, 200 }, // RF swing recovers
+  {  70, 135,  75, 110, 110, 105, 105,  70, 200 }, // RF foot down
+
+  {  70, 120,  60, 110, 110, 105, 120,  70, 200 }, // LF turn: shift RF/RR/LR
+  {  70, 120,  60, 110,  90, 105, 120,  70, 200 }, // LF foot up
+  {  70, 120,  60, 110,  90,  60, 120,  70, 200 }, // LF swing recovers
+  {  70, 120,  60, 110, 110,  60, 120,  70, 200 }, // LF foot down
+
+  {  70, 105,  45, 110, 110,  75, 120,  70, 200 }, // LR turn: shift RF/RR/LF
+  {  70, 105,  45, 110, 110,  75, 120,  90, 200 }, // LR foot up
+  {  70, 105,  45, 110, 110,  75,  75,  90, 200 }, // LR swing recovers
+  {  70, 105,  45, 110, 110,  75,  75,  70, 200 }, // LR foot down
+
+  {  70,  90,  45, 110, 110,  90,  90,  70, 200 }, // RR turn: shift RF/LF/LR
+  {  70,  90,  45,  90, 110,  90,  90,  70, 200 }, // RR foot up
+  {  70,  90,  90,  90, 110,  90,  90,  70, 200 }, // RR swing recovers
+  {  70,  90,  90, 110, 110,  90,  90,  70, 200 }, // RR foot down -- back to start pose
 };
 
 // Backward
