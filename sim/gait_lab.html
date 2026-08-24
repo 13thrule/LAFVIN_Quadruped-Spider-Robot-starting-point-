@@ -1,0 +1,1016 @@
+<title>SpiderBot Gait Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #10141b;
+    --surface: #171d27;
+    --surface-2: #1f2733;
+    --surface-3: #2a3441;
+    --edge: #313d4d;
+    --ink: #e7ecf3;
+    --ink-dim: #93a1b3;
+    --ink-faint: #5c6a7c;
+    --accent: #ff9d52;
+    --accent-ink: #1a1006;
+    --tele: #5fd9d0;
+    --planted: #57c785;
+    --lifted: #f0a94e;
+    --danger: #e2685e;
+    --focus: #7fd8ff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #10141b;
+      --surface: #171d27;
+      --surface-2: #1f2733;
+      --surface-3: #2a3441;
+      --edge: #313d4d;
+      --ink: #e7ecf3;
+      --ink-dim: #93a1b3;
+      --ink-faint: #5c6a7c;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #10141b;
+    --surface: #171d27;
+    --surface-2: #1f2733;
+    --surface-3: #2a3441;
+    --edge: #313d4d;
+    --ink: #e7ecf3;
+    --ink-dim: #93a1b3;
+    --ink-faint: #5c6a7c;
+  }
+  :root[data-theme="light"] {
+    --bg: #eef1f5;
+    --surface: #ffffff;
+    --surface-2: #f4f6f9;
+    --surface-3: #e8ecf1;
+    --edge: #d3dae2;
+    --ink: #1a212b;
+    --ink-dim: #57687c;
+    --ink-faint: #8b98a8;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    min-height: 100vh;
+  }
+  ::selection { background: var(--accent); color: var(--accent-ink); }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+  .wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 28px 24px 60px;
+  }
+
+  header.top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+    border-bottom: 1px solid var(--edge);
+    padding-bottom: 18px;
+  }
+  header.top h1 {
+    font-family: "Chakra Petch", ui-sans-serif, sans-serif;
+    font-weight: 700;
+    font-size: clamp(1.5rem, 1.1rem + 1.4vw, 2.1rem);
+    margin: 0;
+    letter-spacing: 0.01em;
+    text-wrap: balance;
+  }
+  header.top h1 span { color: var(--accent); }
+  header.top p {
+    margin: 4px 0 0;
+    color: var(--ink-dim);
+    font-size: 0.92rem;
+    max-width: 46ch;
+  }
+  .src-tag {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.72rem;
+    color: var(--ink-faint);
+    background: var(--surface-2);
+    border: 1px solid var(--edge);
+    border-radius: 5px;
+    padding: 5px 9px;
+    white-space: nowrap;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.55fr) minmax(280px, 1fr);
+    gap: 20px;
+    align-items: start;
+  }
+  @media (max-width: 880px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--edge);
+    border-radius: 12px;
+    padding: 18px;
+  }
+  .panel + .panel { margin-top: 16px; }
+  .panel h2 {
+    font-family: "Chakra Petch", sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    margin: 0 0 12px;
+  }
+
+  /* --- Stage --- */
+  .stage-panel { padding-bottom: 12px; }
+  .stage-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .action-name {
+    font-family: "Chakra Petch", sans-serif;
+    font-weight: 600;
+    font-size: 1.1rem;
+  }
+  .action-status {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.76rem;
+    color: var(--tele);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .action-status .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--ink-faint);
+  }
+  .action-status.playing .dot { background: var(--tele); box-shadow: 0 0 8px var(--tele); }
+
+  svg#stage {
+    width: 100%;
+    height: auto;
+    display: block;
+    background:
+      radial-gradient(ellipse at 50% 38%, var(--surface-3) 0%, var(--surface-2) 70%);
+    border-radius: 10px;
+    border: 1px solid var(--edge);
+  }
+
+  .progress-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.72rem;
+    color: var(--ink-faint);
+  }
+  .progress-track {
+    flex: 1;
+    height: 5px;
+    background: var(--surface-3);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--tele);
+    width: 0%;
+    transition: width 0.05s linear;
+  }
+
+  /* --- Transport --- */
+  .transport {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--edge);
+  }
+  .transport button.iconbtn {
+    width: 38px; height: 38px;
+    border-radius: 8px;
+    border: 1px solid var(--edge);
+    background: var(--surface-2);
+    color: var(--ink);
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .transport button.iconbtn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .speed-group {
+    display: flex; align-items: center; gap: 8px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.76rem;
+    color: var(--ink-dim);
+  }
+  .speed-group input[type="range"] { width: 100px; accent-color: var(--accent); }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+    font-size: 0.8rem;
+    color: var(--ink-dim);
+  }
+  .switch {
+    position: relative;
+    width: 38px; height: 22px;
+    border-radius: 12px;
+    background: var(--surface-3);
+    border: 1px solid var(--edge);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .switch::after {
+    content: "";
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--ink-faint);
+    transition: left 0.15s ease, background 0.15s ease;
+  }
+  .switch.on { border-color: var(--accent); }
+  .switch.on::after { left: 18px; background: var(--accent); }
+
+  .hint-line {
+    font-size: 0.76rem;
+    color: var(--ink-faint);
+    margin-top: 10px;
+    line-height: 1.5;
+  }
+  .hint-line strong { color: var(--ink-dim); font-weight: 600; }
+
+  /* --- Program groups --- */
+  .group-title {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 14px 0 8px;
+  }
+  .group-title:first-child { margin-top: 0; }
+  .btn-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px;
+  }
+  button.progbtn {
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 0.83rem;
+    font-weight: 500;
+    text-align: left;
+    padding: 9px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--edge);
+    background: var(--surface-2);
+    color: var(--ink);
+    cursor: pointer;
+    transition: border-color 0.12s ease, background 0.12s ease;
+  }
+  button.progbtn:hover { border-color: var(--accent); }
+  button.progbtn.active {
+    background: color-mix(in srgb, var(--accent) 16%, var(--surface-2));
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  button.progbtn:disabled { opacity: 0.4; cursor: not-allowed; }
+  button.progbtn .k {
+    display: block;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.66rem;
+    color: var(--ink-faint);
+    margin-top: 2px;
+  }
+
+  /* --- Telemetry --- */
+  table.tele {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.78rem;
+  }
+  table.tele th {
+    text-align: left;
+    font-weight: 500;
+    color: var(--ink-faint);
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--edge);
+  }
+  table.tele td {
+    padding: 6px 4px;
+    border-bottom: 1px solid color-mix(in srgb, var(--edge) 60%, transparent);
+    font-variant-numeric: tabular-nums;
+    vertical-align: middle;
+  }
+  table.tele tr:last-child td { border-bottom: none; }
+  .servo-bar-track {
+    width: 64px; height: 6px;
+    background: var(--surface-3);
+    border-radius: 3px;
+    position: relative;
+    overflow: hidden;
+  }
+  .servo-bar-fill {
+    position: absolute; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--tele);
+    border-radius: 2px;
+  }
+  .servo-angle { color: var(--ink); width: 3.2em; display: inline-block; }
+  .servo-role { color: var(--ink-faint); font-size: 0.68rem; }
+
+  .caveat {
+    font-size: 0.78rem;
+    line-height: 1.55;
+    color: var(--ink-dim);
+  }
+  .caveat p { margin: 0 0 10px; }
+  .caveat p:last-child { margin-bottom: 0; }
+  .caveat code {
+    font-family: "IBM Plex Mono", monospace;
+    background: var(--surface-2);
+    border: 1px solid var(--edge);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 0.85em;
+    color: var(--tele);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .progress-fill { transition: none; }
+    .switch::after { transition: none; }
+  }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>SpiderBot <span>Gait Lab</span></h1>
+      <p>Live playback of the real keyframe matrices from <code style="font-family:'IBM Plex Mono',monospace">actionarray.h</code> &mdash; same numbers, same per-step timing, before anything touches the board.</p>
+    </div>
+    <div class="src-tag">0.SpiderBot &middot; ESP8266 &middot; 8-servo trot</div>
+  </header>
+
+  <div class="layout">
+    <!-- MAIN COLUMN -->
+    <div>
+      <div class="panel stage-panel">
+        <div class="stage-head">
+          <div class="action-name" id="actionName">Standby</div>
+          <div class="action-status" id="actionStatus"><span class="dot"></span><span id="statusText">idle</span></div>
+        </div>
+
+        <svg id="stage" viewBox="0 0 480 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Top-down schematic of the quadruped robot's four legs">
+        </svg>
+
+        <div class="progress-row">
+          <span id="progLabel">frame 0 / 0</span>
+          <div class="progress-track"><div class="progress-fill" id="progFill"></div></div>
+          <span id="progTime">0 ms</span>
+        </div>
+
+        <div class="transport">
+          <button class="iconbtn" id="playBtn" title="Play / pause" aria-label="Play or pause">&#9654;</button>
+          <button class="iconbtn" id="restartBtn" title="Restart current program" aria-label="Restart">&#8635;</button>
+          <div class="speed-group">
+            <span>speed</span>
+            <input type="range" id="speedRange" min="0.25" max="3" step="0.25" value="1">
+            <span id="speedVal">1.0&times;</span>
+          </div>
+          <div class="toggle-row">
+            <span id="flipLabel">flip stride</span>
+            <div class="switch" id="flipSwitch" role="switch" aria-checked="false" tabindex="0"></div>
+          </div>
+        </div>
+
+        <div class="transport" style="border-top:none; padding-top:0; margin-top:8px;">
+          <div class="toggle-row" style="margin-left:0;">
+            <div class="switch" id="fixSwitch" role="switch" aria-checked="false" tabindex="0"></div>
+            <span id="fixLabel">hold-to-repeat (proposed fix)</span>
+          </div>
+        </div>
+
+        <div class="hint-line" id="modeHint">
+          <strong>Stock behavior:</strong> click a move &mdash; it plays exactly one stride, ignores input until finished, matching the current IR firmware.
+        </div>
+      </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <div>
+      <div class="panel">
+        <h2>Programs</h2>
+        <div class="group-title">Locomotion &middot; hold-capable</div>
+        <div class="btn-grid" id="grpLoco"></div>
+        <div class="group-title">Poses</div>
+        <div class="btn-grid" id="grpPose"></div>
+        <div class="group-title">Performance</div>
+        <div class="btn-grid" id="grpPerf"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Servo telemetry</h2>
+        <table class="tele">
+          <thead><tr><th>Ch</th><th>Role</th><th>Pos</th><th></th></tr></thead>
+          <tbody id="teleBody"></tbody>
+        </table>
+      </div>
+
+      <div class="panel">
+        <h2>Reading this view</h2>
+        <div class="caveat">
+          <p><strong style="color:var(--planted)">&#9679;</strong> foot planted &nbsp; <strong style="color:var(--lifted)">&#9679;</strong> foot lifted &mdash; lift direction is taken directly from the firmware's own row comments (e.g. <code>leg1,4 up</code>), verified against two independent keyframe transitions.</p>
+          <p>Left/right swing is mirrored by convention, not verified against the physical gearing &mdash; if a move looks like it's stepping backward, use the <strong>flip stride</strong> switch.</p>
+          <p>Per-keyframe durations are exact firmware values. The 10&thinsp;ms step quantization from <code>Servo_PROGRAM_Run</code> is smoothed into continuous interpolation here for clarity.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---- Firmware data, transcribed verbatim from actionarray.h / spiderbot_motion.cpp ----
+  // Column order: G14, G12, G13, G15, G16, G5, G4, G2, ms
+  const ZERO_POSE     = [135,45,135,45,45,135,45,135,500];
+  const STANDBY_POSE  = [60,90,90,120,120,90,90,60,500];
+
+  const PRG = {
+    standby: [
+      [90,90,90,90,90,90,90,90,500],
+      [60,90,90,120,120,90,90,60,500]
+    ],
+    forward: [
+      [70,90,90,110,110,90,90,70,200],
+      [90,90,90,110,110,90,45,90,200],
+      [70,90,90,110,110,90,45,70,200],
+      [70,90,90,90,90,90,45,70,200],
+      [70,39,141,90,90,90,90,70,200],
+      [70,39,141,110,110,90,90,70,200],
+      [90,90,141,110,110,90,90,90,200],
+      [90,90,90,110,110,135,90,90,200],
+      [70,90,90,110,110,135,90,70,200],
+      [70,90,90,110,90,135,90,70,200],
+      [70,90,90,110,110,90,90,70,200]
+    ],
+    backward: [
+      [70,90,90,110,110,90,90,70,200],
+      [90,45,90,110,110,90,90,90,200],
+      [70,45,90,110,110,90,90,70,200],
+      [70,45,90,90,90,90,90,70,200],
+      [70,90,90,90,90,135,45,70,200],
+      [70,90,90,110,110,135,45,70,200],
+      [90,90,90,110,110,135,90,90,200],
+      [90,90,135,110,110,90,90,90,200],
+      [70,90,135,110,110,90,90,70,200],
+      [70,90,135,90,110,90,90,70,200],
+      [70,90,90,110,110,90,90,70,200]
+    ],
+    leftshift: [
+      [70,90,90,110,110,90,90,70,200],
+      [70,90,45,90,90,90,90,70,200],
+      [70,90,45,110,110,90,90,70,200],
+      [90,90,45,110,110,90,90,90,200],
+      [90,135,90,110,110,45,90,90,200],
+      [70,135,90,110,110,45,90,70,200],
+      [70,135,90,90,90,90,90,70,200],
+      [70,90,90,90,90,90,135,70,200],
+      [70,90,90,110,110,90,135,70,200],
+      [70,90,90,110,110,90,135,90,200],
+      [70,90,90,110,110,90,90,70,200]
+    ],
+    rightshift: [
+      [70,90,90,110,110,90,90,70,200],
+      [70,90,90,90,90,45,90,70,200],
+      [70,90,90,110,110,45,90,70,200],
+      [90,90,90,110,110,45,90,90,200],
+      [90,90,45,110,110,90,135,90,200],
+      [70,90,45,110,110,90,135,70,200],
+      [70,90,90,90,90,90,135,70,200],
+      [70,135,90,90,90,90,90,70,200],
+      [70,135,90,110,110,90,90,70,200],
+      [90,135,90,110,110,90,90,70,200],
+      [70,90,90,110,110,90,90,70,200]
+    ],
+    turnleft: [
+      [70,90,90,110,110,90,90,70,200],
+      [90,90,90,110,110,90,90,90,200],
+      [90,135,90,110,110,90,135,90,200],
+      [70,135,90,110,110,90,135,70,200],
+      [70,135,90,90,90,90,135,70,200],
+      [70,135,135,90,90,135,135,70,200],
+      [70,135,135,110,110,135,135,70,200],
+      [70,90,90,110,110,90,90,70,200]
+    ],
+    turnright: [
+      [70,90,90,110,110,90,90,70,200],
+      [70,90,90,90,90,90,90,70,200],
+      [70,90,45,90,90,45,90,70,200],
+      [70,90,45,110,110,45,90,70,200],
+      [90,90,45,110,110,45,90,90,200],
+      [90,45,45,110,110,45,45,90,200],
+      [70,45,45,110,110,45,45,70,200],
+      [70,90,90,110,110,90,90,70,200]
+    ],
+    lie: [
+      [110,90,90,70,70,90,90,110,500]
+    ],
+    hello: [
+      [60,90,125,80,120,82,90,50,280],
+      [60,90,125,80,92,74,90,50,220],
+      [60,90,125,80,38,62,90,50,240],
+      [60,90,125,80,34,118,90,50,260],
+      [60,90,125,80,46,58,90,50,260],
+      [60,90,125,80,34,118,90,50,260],
+      [60,90,125,80,46,58,90,50,260],
+      [60,90,125,80,44,88,90,50,220],
+      [60,90,125,80,92,78,90,50,220],
+      [60,90,125,80,120,82,90,50,280],
+      [90,90,90,90,90,90,90,90,500],
+      [60,90,90,120,120,90,90,60,500]
+    ],
+    fighting: [
+      [120,90,90,110,60,90,90,70,500],
+      [120,70,70,110,60,70,70,70,500],
+      [120,110,110,110,60,110,110,70,500],
+      [120,70,70,110,60,70,70,70,500],
+      [120,110,110,110,60,110,110,70,500],
+      [70,90,90,70,110,90,90,110,500],
+      [70,70,70,70,110,70,70,110,500],
+      [70,110,110,70,110,110,110,110,500],
+      [70,70,70,70,110,70,70,110,500],
+      [70,110,110,70,110,110,110,110,500],
+      [70,90,90,70,110,90,90,110,500],
+      [60,90,90,120,120,90,90,60,500]
+    ],
+    pushup: [
+      [70,90,90,120,120,90,90,70,500],
+      [100,90,90,80,80,90,90,100,600],
+      [60,90,90,120,120,90,90,60,700],
+      [100,90,90,80,80,90,90,100,800],
+      [60,90,90,120,120,90,90,60,900],
+      [100,90,90,80,80,90,90,100,1000],
+      [60,90,90,120,120,90,90,60,1100],
+      [100,90,90,80,80,90,90,100,2000],
+      [60,90,90,120,120,90,90,60,2500],
+      [135,90,90,45,45,90,90,135,200],
+      [70,90,90,45,60,90,90,135,800],
+      [70,90,90,45,110,90,90,135,800],
+      [70,90,90,110,110,90,90,70,800]
+    ],
+    sleep: [
+      [90,90,90,90,90,90,90,90,500],
+      [60,90,90,120,120,90,90,60,500],
+      [30,90,90,150,150,90,90,30,500],
+      [30,45,135,150,150,135,45,30,500]
+    ],
+    dance1: [
+      [90,90,90,90,90,90,90,90,400],
+      [50,90,90,90,90,90,90,90,400],
+      [90,90,90,130,90,90,90,90,400],
+      [90,90,90,90,90,90,90,50,400],
+      [90,90,90,90,130,90,90,90,400],
+      [50,90,90,90,90,90,90,90,400],
+      [90,90,90,130,90,90,90,90,400],
+      [90,90,90,90,90,90,90,50,400],
+      [90,90,90,90,130,90,90,90,400],
+      [90,90,90,90,90,90,90,90,400]
+    ],
+    dance2: [
+      [70,45,135,110,110,135,45,70,320],
+      [95,45,135,85,110,135,45,70,260],
+      [70,45,135,110,85,135,45,95,260],
+      [95,45,135,85,110,135,45,70,260],
+      [70,45,135,110,85,135,45,95,260],
+      [95,45,135,85,110,135,45,70,260],
+      [70,45,135,110,85,135,45,95,260],
+      [95,45,135,85,110,135,45,70,260],
+      [70,45,135,110,85,135,45,95,260],
+      [70,45,135,110,110,135,45,70,320]
+    ],
+    dance3: [
+      [70,45,45,110,110,135,135,70,400],
+      [110,45,45,60,70,135,135,70,400],
+      [70,45,45,110,110,135,135,70,400],
+      [110,45,45,110,70,135,135,120,400],
+      [70,45,45,110,110,135,135,70,400],
+      [110,45,45,60,70,135,135,70,400],
+      [70,45,45,110,110,135,135,70,400],
+      [110,45,45,110,70,135,135,120,400],
+      [70,45,45,110,110,135,135,70,400],
+      [70,90,90,110,110,90,90,70,400]
+    ],
+    center: [ STANDBY_POSE.slice(0, 8).concat([300]) ],
+    zero:   [ ZERO_POSE.slice(0, 8).concat([300]) ]
+  };
+
+  // Which programs loop bodily while held (locomotion), vs single-shot (pose/performance).
+  const HOLDABLE = new Set(["forward","backward","leftshift","rightshift","turnleft","turnright"]);
+
+  const PROGRAM_META = {
+    forward:    { label: "Forward",     key: "↑ fwd",  group: "loco" },
+    backward:   { label: "Backward",    key: "↓ back", group: "loco" },
+    leftshift:  { label: "Left shift",  key: "← side", group: "loco" },
+    rightshift: { label: "Right shift", key: "→ side", group: "loco" },
+    turnleft:   { label: "Turn left",   key: "↶ turn",  group: "loco" },
+    turnright:  { label: "Turn right",  key: "↷ turn",  group: "loco" },
+    standby:    { label: "Standby",     key: "prg 1",  group: "pose" },
+    lie:        { label: "Lie",         key: "prg 8",  group: "pose" },
+    center:     { label: "Center",      key: "prg 99", group: "pose" },
+    zero:       { label: "Zero",        key: "prg 100", group: "pose" },
+    hello:      { label: "Hello",       key: "prg 9",  group: "perf" },
+    fighting:   { label: "Fighting",    key: "prg 10", group: "perf" },
+    pushup:     { label: "Push-up",     key: "prg 11", group: "perf" },
+    sleep:      { label: "Sleep",       key: "prg 12", group: "perf" },
+    dance1:     { label: "Dance 1",     key: "prg 13", group: "perf" },
+    dance2:     { label: "Dance 2",     key: "prg 14", group: "perf" },
+    dance3:     { label: "Dance 3",     key: "prg 15", group: "perf" }
+  };
+
+  // Servo channel roles: index -> {name, role, sign for lift, mirrored for swing}
+  const CHANNELS = [
+    { name: "G14", leg: "RF", role: "foot", liftSign: +1 },
+    { name: "G12", leg: "RF", role: "leg",  mirrored: false },
+    { name: "G13", leg: "RR", role: "leg",  mirrored: false },
+    { name: "G15", leg: "RR", role: "foot", liftSign: -1 },
+    { name: "G16", leg: "LF", role: "foot", liftSign: -1 },
+    { name: "G5",  leg: "LF", role: "leg",  mirrored: true },
+    { name: "G4",  leg: "LR", role: "leg",  mirrored: true },
+    { name: "G2",  leg: "LR", role: "foot", liftSign: +1 }
+  ];
+
+  // ---- Playback engine (mirrors Servo_PROGRAM_Run's per-keyframe timing) ----
+  const engine = {
+    cache: STANDBY_POSE.slice(0, 8),      // Running_Servo_POS equivalent, boots at Servo_Act_0 in real fw; using standby here for a calmer opening frame
+    frames: PRG.standby,
+    frameIndex: 0,
+    frameStart: STANDBY_POSE.slice(0, 8),
+    elapsed: 0,
+    playing: false,
+    holding: false,
+    currentKey: "standby",
+    speed: 1,
+    lastTs: null
+  };
+
+  function loadProgram(key, resumeFromCache) {
+    engine.currentKey = key;
+    engine.frames = PRG[key];
+    engine.frameIndex = 0;
+    engine.frameStart = resumeFromCache ? engine.cache.slice() : engine.cache.slice();
+    engine.elapsed = 0;
+    engine.playing = true;
+    highlightActive(key);
+    document.getElementById("actionName").textContent = PROGRAM_META[key].label;
+  }
+
+  function tick(ts) {
+    requestAnimationFrame(tick);
+    if (engine.lastTs === null) engine.lastTs = ts;
+    const dtReal = ts - engine.lastTs;
+    engine.lastTs = ts;
+    if (!engine.playing) { render(); return; }
+
+    engine.elapsed += dtReal * engine.speed;
+    let frame = engine.frames[engine.frameIndex];
+
+    while (engine.elapsed >= frame[8]) {
+      engine.elapsed -= frame[8];
+      engine.cache = frame.slice(0, 8);
+      engine.frameIndex++;
+      if (engine.frameIndex >= engine.frames.length) {
+        if (engine.holding && HOLDABLE.has(engine.currentKey)) {
+          engine.frameIndex = 0;
+        } else {
+          engine.playing = false;
+          setStatus(false);
+          refreshButtonEnablement();
+          render();
+          return;
+        }
+      }
+      engine.frameStart = engine.cache.slice();
+      frame = engine.frames[engine.frameIndex];
+    }
+    render();
+  }
+
+  function currentDisplayAngles() {
+    const frame = engine.frames[engine.frameIndex];
+    const t = frame[8] > 0 ? Math.min(1, engine.elapsed / frame[8]) : 1;
+    const out = new Array(8);
+    for (let i = 0; i < 8; i++) {
+      out[i] = engine.frameStart[i] + (frame[i] - engine.frameStart[i]) * t;
+    }
+    return out;
+  }
+
+  // ---- Rendering ----
+  const svgNS = "http://www.w3.org/2000/svg";
+  const stage = document.getElementById("stage");
+  let flip = false;
+
+  const BODY = { cx: 240, cy: 190, halfW: 60, halfH: 85 };
+  const LEGS = [
+    { idxFoot: 0, idxLeg: 1, side: "R", corner: "F", hip: [BODY.cx + BODY.halfW, BODY.cy - BODY.halfH], label: "RF" },
+    { idxFoot: 3, idxLeg: 2, side: "R", corner: "R", hip: [BODY.cx + BODY.halfW, BODY.cy + BODY.halfH], label: "RR" },
+    { idxFoot: 4, idxLeg: 5, side: "L", corner: "F", hip: [BODY.cx - BODY.halfW, BODY.cy - BODY.halfH], label: "LF" },
+    { idxFoot: 7, idxLeg: 6, side: "L", corner: "R", hip: [BODY.cx - BODY.halfW, BODY.cy + BODY.halfH], label: "LR" }
+  ];
+
+  function buildStaticSVG() {
+    stage.innerHTML = "";
+
+    const bodyRect = document.createElementNS(svgNS, "rect");
+    bodyRect.setAttribute("x", BODY.cx - BODY.halfW * 0.62);
+    bodyRect.setAttribute("y", BODY.cy - BODY.halfH * 0.62);
+    bodyRect.setAttribute("width", BODY.halfW * 1.24);
+    bodyRect.setAttribute("height", BODY.halfH * 1.24);
+    bodyRect.setAttribute("rx", 14);
+    bodyRect.setAttribute("fill", "var(--surface-3)");
+    bodyRect.setAttribute("stroke", "var(--edge)");
+    stage.appendChild(bodyRect);
+
+    const frontMark = document.createElementNS(svgNS, "polygon");
+    const fx = BODY.cx, fy = BODY.cy - BODY.halfH * 0.62;
+    frontMark.setAttribute("points", `${fx-9},${fy+14} ${fx+9},${fy+14} ${fx},${fy}`);
+    frontMark.setAttribute("fill", "var(--accent)");
+    stage.appendChild(frontMark);
+
+    const frontLabel = document.createElementNS(svgNS, "text");
+    frontLabel.setAttribute("x", BODY.cx);
+    frontLabel.setAttribute("y", 26);
+    frontLabel.setAttribute("text-anchor", "middle");
+    frontLabel.setAttribute("fill", "var(--ink-faint)");
+    frontLabel.setAttribute("font-family", "IBM Plex Mono, monospace");
+    frontLabel.setAttribute("font-size", "11");
+    frontLabel.textContent = "FRONT";
+    stage.appendChild(frontLabel);
+
+    LEGS.forEach((leg) => {
+      const g = document.createElementNS(svgNS, "g");
+      g.setAttribute("id", "leg-" + leg.label);
+
+      const coxa = document.createElementNS(svgNS, "line");
+      coxa.setAttribute("class", "coxa");
+      coxa.setAttribute("stroke", "var(--edge)");
+      coxa.setAttribute("stroke-width", "6");
+      coxa.setAttribute("stroke-linecap", "round");
+      g.appendChild(coxa);
+
+      const tibia = document.createElementNS(svgNS, "line");
+      tibia.setAttribute("class", "tibia");
+      tibia.setAttribute("stroke", "var(--ink-faint)");
+      tibia.setAttribute("stroke-width", "5");
+      tibia.setAttribute("stroke-linecap", "round");
+      g.appendChild(tibia);
+
+      const foot = document.createElementNS(svgNS, "circle");
+      foot.setAttribute("class", "foot");
+      foot.setAttribute("r", "7");
+      foot.setAttribute("fill", "var(--planted)");
+      foot.setAttribute("stroke", "var(--bg)");
+      foot.setAttribute("stroke-width", "1.5");
+      g.appendChild(foot);
+
+      const label = document.createElementNS(svgNS, "text");
+      label.setAttribute("class", "leglabel");
+      label.setAttribute("text-anchor", "middle");
+      label.setAttribute("fill", "var(--ink-faint)");
+      label.setAttribute("font-family", "IBM Plex Mono, monospace");
+      label.setAttribute("font-size", "10");
+      label.textContent = leg.label;
+      g.appendChild(label);
+
+      stage.appendChild(g);
+      leg.el = { coxa, tibia, foot, label };
+    });
+  }
+
+  function render() {
+    const angles = currentDisplayAngles();
+
+    LEGS.forEach((leg) => {
+      const [hx, hy] = leg.hip;
+      const outX = leg.side === "R" ? 1 : -1;
+      const outY = leg.corner === "F" ? -1 : 1;
+
+      const coxaLen = 34;
+      const kx = hx + outX * coxaLen * 0.72;
+      const ky = hy + outY * coxaLen * 0.72;
+
+      leg.el.coxa.setAttribute("x1", hx);
+      leg.el.coxa.setAttribute("y1", hy);
+      leg.el.coxa.setAttribute("x2", kx);
+      leg.el.coxa.setAttribute("y2", ky);
+
+      const rawSwing = angles[leg.idxLeg] - 90;
+      const mirror = (leg.side === "L") ? -1 : 1;
+      const flipSign = flip ? -1 : 1;
+      const swingDeg = rawSwing * mirror * flipSign * 0.75;
+
+      const baseAngleRad = Math.atan2(outY, outX);
+      const swingRad = baseAngleRad + (swingDeg * Math.PI / 180);
+
+      const liftSign = CHANNELS[leg.idxFoot].liftSign;
+      const liftRaw = (angles[leg.idxFoot] - 90) * liftSign;
+      const baseTibia = 58;
+      // Both directions of foot-servo travel are real motion: "up" (liftRaw>0)
+      // retracts the leg, "down/press" (liftRaw<0) extends it further out —
+      // performance moves like the dances only ever use the press direction,
+      // so clamping negative values to zero made them look frozen.
+      const tibiaLen = Math.min(baseTibia * 1.55, Math.max(baseTibia * 0.4, baseTibia - liftRaw * 0.55));
+
+      const fx = kx + Math.cos(swingRad) * tibiaLen;
+      const fy = ky + Math.sin(swingRad) * tibiaLen;
+
+      leg.el.tibia.setAttribute("x1", kx);
+      leg.el.tibia.setAttribute("y1", ky);
+      leg.el.tibia.setAttribute("x2", fx);
+      leg.el.tibia.setAttribute("y2", fy);
+
+      leg.el.foot.setAttribute("cx", fx);
+      leg.el.foot.setAttribute("cy", fy);
+      const lifted = liftRaw > 6;
+      leg.el.foot.setAttribute("fill", lifted ? "var(--lifted)" : "var(--planted)");
+
+      const labelOutX = fx + outX * 14;
+      const labelOutY = fy + outY * 4;
+      leg.el.label.setAttribute("x", labelOutX);
+      leg.el.label.setAttribute("y", labelOutY);
+    });
+
+    // Telemetry
+    angles.forEach((a, i) => {
+      const val = Math.round(a);
+      const cell = document.getElementById("tele-val-" + i);
+      const fill = document.getElementById("tele-bar-" + i);
+      if (cell) cell.textContent = val;
+      if (fill) {
+        const pct = ((val - 1) / 179) * 100;
+        fill.style.left = pct + "%";
+      }
+    });
+
+    // Progress
+    const frame = engine.frames[engine.frameIndex];
+    const pct = frame[8] > 0 ? Math.min(100, (engine.elapsed / frame[8]) * 100) : 100;
+    document.getElementById("progFill").style.width = pct + "%";
+    document.getElementById("progLabel").textContent =
+      "frame " + (engine.frameIndex + 1) + " / " + engine.frames.length;
+    document.getElementById("progTime").textContent = Math.round(engine.elapsed) + " / " + frame[8] + " ms";
+  }
+
+  function setStatus(playing) {
+    const statusEl = document.getElementById("actionStatus");
+    const textEl = document.getElementById("statusText");
+    statusEl.classList.toggle("playing", playing);
+    textEl.textContent = playing ? "playing" : "idle";
+    document.getElementById("playBtn").innerHTML = playing ? "&#10074;&#10074;" : "&#9654;";
+  }
+
+  // ---- UI wiring ----
+  const grpLoco = document.getElementById("grpLoco");
+  const grpPose = document.getElementById("grpPose");
+  const grpPerf = document.getElementById("grpPerf");
+  const buttons = {};
+
+  function makeButton(key) {
+    const meta = PROGRAM_META[key];
+    const btn = document.createElement("button");
+    btn.className = "progbtn";
+    btn.dataset.key = key;
+    btn.innerHTML = meta.label + '<span class="k">' + meta.key + "</span>";
+    buttons[key] = btn;
+
+    function startAction() {
+      const fixed = document.getElementById("fixSwitch").classList.contains("on");
+      if (engine.playing && !fixed) return; // stock: ignore input mid-sequence
+      loadProgram(key);
+      setStatus(true);
+      refreshButtonEnablement();
+    }
+
+    btn.addEventListener("click", startAction);
+
+    if (HOLDABLE.has(key)) {
+      btn.addEventListener("mousedown", () => {
+        const fixed = document.getElementById("fixSwitch").classList.contains("on");
+        if (!fixed) return;
+        engine.holding = true;
+      });
+      const release = () => { engine.holding = false; };
+      btn.addEventListener("mouseup", release);
+      btn.addEventListener("mouseleave", release);
+      btn.addEventListener("touchend", release);
+    }
+
+    return btn;
+  }
+
+  Object.keys(PROGRAM_META).forEach((key) => {
+    const meta = PROGRAM_META[key];
+    const btn = makeButton(key);
+    if (meta.group === "loco") grpLoco.appendChild(btn);
+    else if (meta.group === "pose") grpPose.appendChild(btn);
+    else grpPerf.appendChild(btn);
+  });
+
+  function highlightActive(key) {
+    Object.entries(buttons).forEach(([k, b]) => b.classList.toggle("active", k === key));
+  }
+
+  function refreshButtonEnablement() {
+    const fixed = document.getElementById("fixSwitch").classList.contains("on");
+    Object.values(buttons).forEach((b) => {
+      b.disabled = !fixed && engine.playing;
+    });
+  }
+
+  document.getElementById("playBtn").addEventListener("click", () => {
+    if (engine.frames[engine.frameIndex][8] === undefined) return;
+    engine.playing = !engine.playing;
+    setStatus(engine.playing);
+    refreshButtonEnablement();
+  });
+
+  document.getElementById("restartBtn").addEventListener("click", () => {
+    loadProgram(engine.currentKey);
+    setStatus(true);
+    refreshButtonEnablement();
+  });
+
+  const speedRange = document.getElementById("speedRange");
+  speedRange.addEventListener("input", () => {
+    engine.speed = parseFloat(speedRange.value);
+    document.getElementById("speedVal").textContent = engine.speed.toFixed(2).replace(/0$/, "") + "×";
+  });
+
+  function wireSwitch(id, onToggle) {
+    const el = document.getElementById(id);
+    function toggle() {
+      const on = el.classList.toggle("on");
+      el.setAttribute("aria-checked", on ? "true" : "false");
+      onToggle(on);
+    }
+    el.addEventListener("click", toggle);
+    el.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); }
+    });
+  }
+
+  wireSwitch("flipSwitch", (on) => { flip = on; });
+  wireSwitch("fixSwitch", (on) => {
+    refreshButtonEnablement();
+    document.getElementById("modeHint").innerHTML = on
+      ? "<strong>Proposed fix:</strong> hold a locomotion button to keep striding continuously, and any button can interrupt whatever is currently playing &mdash; this is the behavior change being proposed for the firmware."
+      : "<strong>Stock behavior:</strong> click a move &mdash; it plays exactly one stride, ignores input until finished, matching the current IR firmware.";
+  });
+
+  // ---- Telemetry table ----
+  const teleBody = document.getElementById("teleBody");
+  CHANNELS.forEach((ch, i) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${ch.name}</td>
+      <td class="servo-role">${ch.leg}-${ch.role}</td>
+      <td><span class="servo-angle" id="tele-val-${i}">90</span></td>
+      <td><div class="servo-bar-track"><div class="servo-bar-fill" id="tele-bar-${i}" style="left:49%"></div></div></td>
+    `;
+    teleBody.appendChild(tr);
+  });
+
+  // ---- Boot ----
+  buildStaticSVG();
+  loadProgram("standby");
+  setStatus(true);
+  refreshButtonEnablement();
+  requestAnimationFrame(tick);
+})();
+</script>
