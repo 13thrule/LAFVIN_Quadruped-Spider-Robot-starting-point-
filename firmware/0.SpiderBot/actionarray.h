@@ -33,20 +33,24 @@ const int Servo_Prg_1[][ALLMATRIX] PROGMEM = {
 };
 
 // Forward
+// Timing compressed from the stock 200ms/step (2200ms/stride) to 120ms/step
+// (1320ms/stride, ~40% faster) so a held stride reads as an actual walk
+// pace instead of a slow shuffle. Footwork/angles are untouched -- only
+// speed changed, so this stays a one-variable tweak off a proven gait.
 const int Servo_Prg_2_Step = 11;
 const int Servo_Prg_2[][ALLMATRIX] PROGMEM = {
   // G14, G12, G13, G15, G16,  G5,  G4,  G2,  ms
-  {  70,  90,      90, 110, 110,  90,  90,  70, 200 }, // standby
-  {  90,  90,      90, 110, 110,  90,  45,  90, 200 }, // leg1,4 up; leg4 fw
-  {  70,  90,      90, 110, 110,  90,  45,  70, 200 }, // leg1,4 down
-  {  70,  90,      90,  90,  90,  90,  45,  70, 200 }, // leg2,3 up
-  {  70,  45 - 6, 135 + 6,  90,  90,  90,  90,  70, 200 }, // leg1,4 back; leg2 fw
-  {  70,  45 - 6, 135 + 6, 110, 110,  90,  90,  70, 200 }, // leg2,3 down
-  {  90,  90,     135 + 6, 110, 110,  90,  90,  90, 200 }, // leg1,4 up; leg1 fw
-  {  90,  90,      90, 110, 110, 135,  90,  90, 200 }, // leg2,3 back
-  {  70,  90,      90, 110, 110, 135,  90,  70, 200 }, // leg1,4 down
-  {  70,  90,      90, 110,  90, 135,  90,  70, 200 }, // leg3 up
-  {  70,  90,      90, 110, 110,  90,  90,  70, 200 }, // leg3 fw down
+  {  70,  90,      90, 110, 110,  90,  90,  70, 120 }, // standby
+  {  90,  90,      90, 110, 110,  90,  45,  90, 120 }, // leg1,4 up; leg4 fw
+  {  70,  90,      90, 110, 110,  90,  45,  70, 120 }, // leg1,4 down
+  {  70,  90,      90,  90,  90,  90,  45,  70, 120 }, // leg2,3 up
+  {  70,  45 - 6, 135 + 6,  90,  90,  90,  90,  70, 120 }, // leg1,4 back; leg2 fw
+  {  70,  45 - 6, 135 + 6, 110, 110,  90,  90,  70, 120 }, // leg2,3 down
+  {  90,  90,     135 + 6, 110, 110,  90,  90,  90, 120 }, // leg1,4 up; leg1 fw
+  {  90,  90,      90, 110, 110, 135,  90,  90, 120 }, // leg2,3 back
+  {  70,  90,      90, 110, 110, 135,  90,  70, 120 }, // leg1,4 down
+  {  70,  90,      90, 110,  90, 135,  90,  70, 120 }, // leg3 up
+  {  70,  90,      90, 110, 110,  90,  90,  70, 120 }, // leg3 fw down
 };
 
 // Backward
