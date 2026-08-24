@@ -27,18 +27,26 @@ static int lastIrProgramId = PROGRAM_NONE;
 #define AVOIDDIS 40
 #define ENABLE_DEBUG_SERIAL 0
 
-// The current avoidance wiring uses TX as TRIG and RX as ECHO.
+// The current avoidance wiring uses TX as TRIG and RX as ECHO, so the
+// ultrasonic sensor and the USB serial port share the same two physical
+// pins. They cannot be used at the same time: unplug the ultrasonic sensor
+// whenever the serial port is needed (flashing, debug logging, or the
+// calibration() helper below), same as this kit's own flashing instructions
+// already require.
 static const uint8_t ULTRASONIC_TRIG_PIN = 1;  // TX
 static const uint8_t ULTRASONIC_ECHO_PIN = 3;  // RX
 static const unsigned long ULTRASONIC_TIMEOUT_US = 30000;
 
-#if ENABLE_DEBUG_SERIAL
+// Serial is needed for SpiderBotMotion::calibration() regardless of whether
+// verbose debug logging is enabled, so bring the UART up unconditionally.
+// ENABLE_DEBUG_SERIAL only controls how chatty it is.
 #define DEBUG_SERIAL_BEGIN(baud) Serial.begin(baud)
+
+#if ENABLE_DEBUG_SERIAL
 #define DEBUG_PRINT(value) Serial.print(value)
 #define DEBUG_PRINTLN(value) Serial.println(value)
 #define DEBUG_PRINT_HEX64(value) serialPrintUint64((value), HEX)
 #else
-#define DEBUG_SERIAL_BEGIN(baud) do {} while (0)
 #define DEBUG_PRINT(value) do {} while (0)
 #define DEBUG_PRINTLN(value) do {} while (0)
 #define DEBUG_PRINT_HEX64(value) do {} while (0)
@@ -51,6 +59,23 @@ SpiderBotMotion robot;
 static int decodeIrProgram(uint32_t code);
 static void runRobotProgram(int programId);
 static float measureAvoidDistanceCm();
+
+// Only locomotion commands make sense to chain continuously while a button
+// stays held -- poses/performance moves (hello, dances, etc.) still run
+// once per keypress.
+static bool isHoldableLocomotion(int programId) {
+  switch (programId) {
+    case PROGRAM_FORWARD:
+    case PROGRAM_BACKWARD:
+    case PROGRAM_LEFTSHIFT:
+    case PROGRAM_RIGHTSHIFT:
+    case PROGRAM_TURNLEFT:
+    case PROGRAM_TURNRIGHT:
+      return true;
+    default:
+      return false;
+  }
+}
 
 // Board startup order:
 // 1. bring up debug / IR / ultrasonic pins
@@ -75,11 +100,20 @@ void setup()
 // Main loop responsibilities:
 // 1. consume IR commands
 // 2. serve HTTP requests
-// 3. execute queued web/API actions
-// 4. apply direct single-servo debug commands
+// 3. read per-servo calibration commands off serial (see calibration()'s
+//    "S,<servo_pin>,<offset>" format; requires the ultrasonic sensor
+//    disconnected, since it shares the TX/RX pins)
+// 4. execute queued web/API actions
+// 5. apply direct single-servo debug commands
 void loop()
 {
-  if (irrecv.decode(&results)) {
+  bool haveIrResult = irrecv.decode(&results);
+
+  // A while, not an if: if a locomotion hold below gets interrupted by a
+  // genuinely new (non-repeat) keypress, that decode is reprocessed here
+  // as a fresh command instead of being silently dropped.
+  while (haveIrResult) {
+    haveIrResult = false;
     int programId = PROGRAM_NONE;
 
     DEBUG_PRINT_HEX64(results.value);
@@ -100,6 +134,27 @@ void loop()
       DEBUG_PRINTLN(getActionLabel(programId));
       runRobotProgram(programId);
       lastIrProgramId = programId;
+
+      // While a locomotion button stays held, keep striding back-to-back
+      // without routing back through the top of loop() each time -- that
+      // path re-applies the 150ms decode debounce on every repeat frame,
+      // which turned "hold to walk" into a chain of separately-paused
+      // single steps instead of one continuous walk.
+      while (isHoldableLocomotion(programId) && !isRobotStopRequested()) {
+        if (!irrecv.decode(&results)) break;
+
+        if (results.repeat) {
+          irrecv.resume();
+          runRobotProgram(programId);
+          continue;
+        }
+
+        // A distinct new keypress arrived mid-hold (e.g. switching
+        // direction). Stop this chain and let the top of this block
+        // process it as its own command instead of dropping it.
+        haveIrResult = true;
+        break;
+      }
     }
 
     DEBUG_PRINTLN(irnum);
@@ -107,6 +162,7 @@ void loop()
   }
 
   handleClient();
+  robot.calibration();
 
   if (Servo_PROGRAM >= 1) {
     DEBUG_PRINTLN(getActionLabel(Servo_PROGRAM));
