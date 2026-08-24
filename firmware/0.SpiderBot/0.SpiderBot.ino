@@ -17,6 +17,12 @@ decode_results results;
 
 uint32_t irnum = 0;
 
+// Last program id selected by a real (non-repeat) IR keypress. NEC remotes
+// send a distinct zero-data "repeat" frame roughly every 110ms while a
+// button stays held, rather than resending the original code, so we need
+// this to know what to keep running when a repeat frame arrives.
+static int lastIrProgramId = PROGRAM_NONE;
+
 // Avoidance distance threshold in centimeters.
 #define AVOIDDIS 40
 #define ENABLE_DEBUG_SERIAL 0
@@ -77,14 +83,23 @@ void loop()
     int programId = PROGRAM_NONE;
 
     DEBUG_PRINT_HEX64(results.value);
-    irnum = (uint32_t)results.value;
     delay(150);
     irrecv.resume();
 
-    programId = decodeIrProgram(irnum);
+    if (results.repeat) {
+      // The button is still held down; re-run whatever the last real
+      // keypress selected so holding forward/turn/etc. walks continuously
+      // instead of capping every physical press at one stride.
+      programId = lastIrProgramId;
+    } else {
+      irnum = (uint32_t)results.value;
+      programId = decodeIrProgram(irnum);
+    }
+
     if (programId != PROGRAM_NONE) {
       DEBUG_PRINTLN(getActionLabel(programId));
       runRobotProgram(programId);
+      lastIrProgramId = programId;
     }
 
     DEBUG_PRINTLN(irnum);
