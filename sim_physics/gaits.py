@@ -222,8 +222,16 @@ ZERO = [[135, 45, 135, 45, 45, 135, 45, 135, 300]]  # Servo_Act_0
 # instant, same stability principle as the wave gait. Last row's non-ms
 # values equal the first row's, so it loops with zero drift, same check
 # used for WAVE_FORWARD.
+#
+# First version used a 400ms push -- normal walking pace -- and didn't
+# read as a "hop" at all. Per dog_leg_calibrate's own session notes (a
+# different robot, but the same lesson): the springy/leap character came
+# from making the stroke fast/near-instant, not from a bigger motion --
+# their tunable "Snap" parameter was literally stroke duration. Push
+# dropped to 120ms here for the same reason; reset stays gradual (200ms)
+# since those steps are recovery, not the push itself.
 FROGHOP = [
-    [70, 90, 45, 110, 110, 90, 135, 70, 400],   # push: both rear legs sweep back together
+    [70, 90, 45, 110, 110, 90, 135, 70, 120],   # push: both rear legs snap back together, fast
     [70, 90, 45, 90, 110, 90, 135, 70, 200],    # RR foot up
     [70, 90, 90, 90, 110, 90, 135, 70, 200],    # RR swing recovers
     [70, 90, 90, 110, 110, 90, 135, 70, 200],   # RR foot down
