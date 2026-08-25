@@ -234,9 +234,9 @@ ZERO = [[135, 45, 135, 45, 45, 135, 45, 135, 300]]  # Servo_Act_0
 # HOLDABLE/repeating without separately re-checking servo heat/stall risk
 # under repeated rapid-fire use.
 FROGHOP = [
-    [55, 90, 90, 125, 125, 90, 90, 55, 180],    # crouch: all 4 feet compress down together
-    [115, 90, 45, 65, 65, 90, 135, 115, 80],    # launch: all 4 feet extend hard + rear legs snap, fast
-    [70, 90, 90, 110, 110, 90, 90, 70, 350],    # land -- settle back to standing pose
+    [55, 90, 90, 125, 125, 90, 90, 55, 60],     # crouch: all 4 feet compress down together, fast
+    [115, 90, 45, 65, 65, 90, 135, 115, 60],    # launch: all 4 feet extend hard + rear legs snap, fast
+    [70, 90, 90, 110, 110, 90, 90, 70, 150],    # land -- settle back to standing pose
 ]
 
 GAITS = {

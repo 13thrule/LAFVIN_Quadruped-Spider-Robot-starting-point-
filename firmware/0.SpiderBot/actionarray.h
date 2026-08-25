@@ -49,12 +49,17 @@ const int Servo_Prg_1[][ALLMATRIX] PROGMEM = {
 // to live here (still available, unused, as Servo_Prg_16 below) -- a
 // deliberate choice to make "forward" a hop instead of a walk, not an
 // accidental loss of that earlier work.
+// Timing cut further after real-hardware testing: the original
+// 180/80/350ms (610ms total) read as slow/deliberate even with the fast
+// launch buried in the middle -- a real frog's whole crouch-to-leap is
+// over almost instantly, not just the launch instant. Now 60/60/150
+// (270ms total, well under half).
 const int Servo_Prg_2_Step = 3;
 const int Servo_Prg_2[][ALLMATRIX] PROGMEM = {
   // G14, G12, G13, G15, G16,  G5,  G4,  G2,  ms
-  {  55,  90,  90, 125, 125,  90,  90,  55, 180 }, // crouch: all 4 feet compress down together
-  { 115,  90,  45,  65,  65,  90, 135, 115,  80 }, // launch: all 4 feet extend hard + rear legs snap, fast
-  {  70,  90,  90, 110, 110,  90,  90,  70, 350 }, // land -- settle back to standing pose
+  {  55,  90,  90, 125, 125,  90,  90,  55,  60 }, // crouch: all 4 feet compress down together, fast
+  { 115,  90,  45,  65,  65,  90, 135, 115,  60 }, // launch: all 4 feet extend hard + rear legs snap, fast
+  {  70,  90,  90, 110, 110,  90,  90,  70, 150 }, // land -- settle back to standing pose
 };
 
 // Backward
