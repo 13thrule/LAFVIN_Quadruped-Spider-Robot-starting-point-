@@ -3,10 +3,10 @@ Loads the spider robot into PyBullet with real gravity/ground contact and
 drives it through a chosen gait's keyframes, reporting whether it stays
 upright.
 
-IMPORTANT: robot_config.py is currently full of PLACEHOLDER dimensions, not
-measurements. Results from this script are a pipeline test until those are
-replaced with real numbers -- see robot_config.py for exactly what to
-measure.
+robot_config.py's dimensions are informed estimates measured from a
+same-family open-source design's real STL files, not exact measurements of
+this specific unit -- see robot_config.py's docstring for what's measured
+vs. estimated, and for how to swap in real measurements later.
 
 Usage (from this directory):
   venv\\Scripts\\python.exe run_sim.py wave
@@ -26,6 +26,16 @@ from robot_model import build_spider_robot
 from servo_map import LEGS, LEG_CHANNELS, SERVO_CENTER_DEG
 from gaits import GAITS
 
+# MG90S real stall torque is ~2.2 kgf-cm at 4.8V (~0.216 N-m) -- NOT the
+# arbitrary force=2.0 N-m this script used to simulate with, which was
+# roughly 10x stronger than the real actuator and would mask real tracking
+# error under load. Loaded-servo speed is ~2.5ms/degree per the earlier
+# gait research (real-world CircuitDigest measurement, not a spec-sheet
+# no-load number), which is ~6.98 rad/s; used a bit under that (5.0) since
+# a walking robot's load varies through the gait rather than being constant.
+SERVO_MAX_TORQUE_NM = 0.22
+SERVO_MAX_VELOCITY_RAD_S = 5.0
+
 
 def servo_deg_to_joint_rad(servo_deg, sign):
     return (servo_deg - SERVO_CENTER_DEG) * (math.pi / 180.0) * sign
@@ -38,11 +48,13 @@ def apply_frame(body_id, joints, frame):
         knee_target = servo_deg_to_joint_rad(frame[ch["knee_idx"]], ch["lift_sign"])
         p.setJointMotorControl2(
             body_id, joints[f"{leg}_hip"], p.POSITION_CONTROL,
-            targetPosition=hip_target, force=2.0, maxVelocity=6.0,
+            targetPosition=hip_target,
+            force=SERVO_MAX_TORQUE_NM, maxVelocity=SERVO_MAX_VELOCITY_RAD_S,
         )
         p.setJointMotorControl2(
             body_id, joints[f"{leg}_knee"], p.POSITION_CONTROL,
-            targetPosition=knee_target, force=2.0, maxVelocity=6.0,
+            targetPosition=knee_target,
+            force=SERVO_MAX_TORQUE_NM, maxVelocity=SERVO_MAX_VELOCITY_RAD_S,
         )
 
 

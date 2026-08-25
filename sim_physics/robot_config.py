@@ -1,12 +1,22 @@
 """
 Single source of truth for the spider bot's physical dimensions/mass.
 
-Every value below is a PLACEHOLDER guess, not a measurement -- generate_urdf.py
-reads this file, so updating these numbers to real measurements and re-running
-`python generate_urdf.py` is the entire update path. Nothing else needs to
-change by hand.
+Values below are now INFORMED ESTIMATES, not blind guesses: measured
+directly (bounding-box, in sim_physics/reference_stl/measure.py) from real
+STL files published at github.com/xinlitech/quadruped-spider-for-esp8266 --
+a same-family open-source "quadruped spider ESP8266" design sold under
+several rebrands (this LAFVIN kit almost certainly among them, given the
+identical servo count/layout and matching AliExpress listings for the same
+underlying design). Two honest caveats, still: (1) not verified identical
+to this exact physical unit -- that repo's parts are 3D-printed, while
+LAFVIN's own BOM describes acrylic panels, so it may be a variant; (2) the
+hip-bracket cluster's (leg1_1/2/3) contribution to COXA_LENGTH is estimated
+from overlapping bounding boxes, not a traced assembly.
 
-What to actually measure on the robot (all in meters, i.e. mm / 1000):
+Updating these to real measurements of the actual robot and re-running any
+script here is the entire update path -- nothing else needs to change.
+
+What to actually measure to replace an estimate below (in meters, mm/1000):
   BODY_LENGTH / BODY_WIDTH / BODY_HEIGHT -- the main chassis block the 4 hips
       mount to. Skip the acrylic corner tabs/antennae, just the core body.
   COXA_LENGTH  -- the fixed stub from the hip joint to the knee/lift joint
@@ -21,16 +31,28 @@ What to actually measure on the robot (all in meters, i.e. mm / 1000):
 """
 
 # --- Body -------------------------------------------------------------
-BODY_LENGTH_M = 0.14   # PLACEHOLDER -- front-to-back
-BODY_WIDTH_M = 0.10    # PLACEHOLDER -- left-to-right
-BODY_HEIGHT_M = 0.03   # PLACEHOLDER -- top-to-bottom of the chassis block
-BODY_MASS_KG = 0.30    # PLACEHOLDER -- whole robot, batteries included
+# From bodyBottom.stl's measured bounding box (83.76mm x 49mm x 14mm).
+# Axis-to-robot-orientation (which measured axis is front-back vs
+# left-right) is an assumption, not verified: took the longer axis as
+# front-to-back since these chassis plates are typically elongated to fit
+# 4 hip mounts symmetrically front/rear.
+BODY_LENGTH_M = 0.084   # measured (bodyBottom.stl long axis) -- front-to-back
+BODY_WIDTH_M = 0.049    # measured (bodyBottom.stl short axis) -- left-to-right
+BODY_HEIGHT_M = 0.014   # measured (bodyBottom.stl thickness)
+BODY_MASS_KG = 0.40     # still an estimate -- AliExpress package weight for
+                         # this design is 1.0kg (packaging+manual+screws
+                         # included, not the assembled robot), used only as
+                         # a sanity check that the robot is well under 1kg
 
 # --- Legs (identical for all 4) ----------------------------------------
-COXA_LENGTH_M = 0.025   # PLACEHOLDER -- hip (swing) joint to knee (lift) joint
-TIBIA_LENGTH_M = 0.045  # PLACEHOLDER -- knee (lift) joint to foot tip
-LEG_MASS_KG = 0.015     # PLACEHOLDER -- per leg segment (coxa or tibia), small
-                         # relative to BODY_MASS_KG so a rough guess is fine
+# leg2.stl (the long structural arm) measures 65mm; the leg1_1/1_2/1_3
+# hip-bracket cluster that connects it to the hip servo horn is compact --
+# estimated at ~20mm of added reach from its overlapping bounding boxes,
+# not a traced assembly.
+COXA_LENGTH_M = 0.020    # estimated (leg1_1/1_2/1_3 bracket cluster)
+TIBIA_LENGTH_M = 0.065   # measured (leg2.stl long axis)
+LEG_MASS_KG = 0.015      # still an estimate -- small relative to
+                          # BODY_MASS_KG so a rough guess matters less
 
 # --- Hip mount points, relative to body center --------------------------
 # Defaults assume all 4 hips sit at the body's corners. Override if the

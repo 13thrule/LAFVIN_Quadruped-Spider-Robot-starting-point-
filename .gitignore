@@ -1,2 +1,3 @@
 sim_physics/venv/
 __pycache__/
+sim_physics/reference_stl/*.stl
