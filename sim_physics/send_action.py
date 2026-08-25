@@ -26,7 +26,12 @@ def main():
     args = parser.parse_args()
 
     ser = serial.Serial(args.port, args.baud, timeout=2)
-    time.sleep(0.3)  # let the line settle after opening
+    # Opening a fresh serial connection to this board typically toggles DTR
+    # and reboots it (same ESP8266 auto-reset circuit used for flashing);
+    # 0.3s wasn't enough for it to reach loop() and start reading serial
+    # again -- give it a real boot settle before sending anything.
+    time.sleep(2.0)
+    ser.reset_input_buffer()
 
     ser.write(f"A,{args.action}\n".encode("utf-8"))
 

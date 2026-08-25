@@ -179,8 +179,16 @@ void SpiderBotMotion::calibration()
         char command = Serial.read();
 
         if (command == 'A' || command == 'a') {
-            if (Serial.read() == ',') {
-                String actionName = Serial.readStringUntil('\n');
+            // Read the rest of the line as one blocking call (readStringUntil
+            // waits for bytes up to Serial's timeout) instead of a raw
+            // Serial.read() for the comma -- that single non-blocking read
+            // could run ahead of the incoming bytes at loop() speed and
+            // return -1 before the comma had actually arrived, silently
+            // dropping the whole command with no error printed.
+            String rest = Serial.readStringUntil('\n');
+            rest.trim();
+            if (rest.length() > 0 && rest.charAt(0) == ',') {
+                String actionName = rest.substring(1);
                 actionName.trim();
                 Serial.print(F("A,"));
                 Serial.println(actionName);
@@ -195,6 +203,8 @@ void SpiderBotMotion::calibration()
                         Serial.println(F("ERR,unknown action"));
                     }
                 }
+            } else {
+                Serial.println(F("ERR,expected A,<action name>"));
             }
         }
 
