@@ -80,6 +80,11 @@ def apply_frame(body_id, joints, frame):
 def main():
     p.connect(p.GUI)
     p.setAdditionalSearchPath(pybullet_data.getDataPath())
+    # Explicitly disabled: PyBullet's GUI connection can otherwise step
+    # physics on its own internal clock as well as from our own
+    # stepSimulation() calls below, effectively double-stepping and
+    # destabilizing what was already verified stable headless.
+    p.setRealTimeSimulation(0)
     p.setGravity(0, 0, -9.81)
     p.setTimeStep(1.0 / 240.0)
     p.loadURDF("plane.urdf")
@@ -127,10 +132,17 @@ def main():
         [0, 0, -0.02], textColorRGB=[0.6, 0.7, 0.9], textSize=1.0,
     )
 
+    PHYSICS_DT = 1.0 / 240.0
+    accumulator = 0.0
+
     while p.isConnected():
         now = time.time()
-        dt = now - last_time
+        # Clamp: if rendering/input hiccups for a moment, don't try to
+        # replay a huge backlog of physics steps in one go (the classic
+        # "spiral of death") -- just resume from here.
+        frame_dt = min(now - last_time, 0.25)
         last_time = now
+        accumulator += frame_dt
 
         keys = p.getKeyboardEvents()
 
@@ -158,29 +170,40 @@ def main():
                 state["holding"] = False
                 switch_gait(gait_name)
 
-        frames = GAITS[state["gait"]]
-        state["elapsed"] += dt * 1000.0  # ms
-        frame = frames[state["frame_index"]]
-
-        while state["elapsed"] >= frame[8]:
-            state["elapsed"] -= frame[8]
-            state["frame_index"] += 1
-            if state["frame_index"] >= len(frames):
-                if state["holding"] and state["gait"] in HOLDABLE:
-                    state["frame_index"] = 0
-                else:
-                    # One-shot action finished (or button released) --
-                    # settle back to standby, same as the firmware returning
-                    # to a resting pose after a program completes.
-                    if state["gait"] != "standby":
-                        switch_gait("standby")
-                    else:
-                        state["frame_index"] = len(frames) - 1
-                    break
+        # Advance gait keyframes and physics together in fixed PHYSICS_DT
+        # increments, however many are needed to catch up to real time.
+        # Advancing the gait's "elapsed" clock by real (variable) frame_dt
+        # while only stepping physics once per loop iteration -- what this
+        # used to do -- let commanded servo targets run ahead of what the
+        # physics had actually simulated whenever rendering lagged, which
+        # is what was causing falls here that never showed up in the
+        # headless tests (those step physics in lockstep with the gait by
+        # construction).
+        while accumulator >= PHYSICS_DT:
+            frames = GAITS[state["gait"]]
+            state["elapsed"] += PHYSICS_DT * 1000.0  # ms
             frame = frames[state["frame_index"]]
 
-        apply_frame(body_id, joints, frame)
-        p.stepSimulation()
+            while state["elapsed"] >= frame[8]:
+                state["elapsed"] -= frame[8]
+                state["frame_index"] += 1
+                if state["frame_index"] >= len(frames):
+                    if state["holding"] and state["gait"] in HOLDABLE:
+                        state["frame_index"] = 0
+                    else:
+                        # One-shot action finished (or button released) --
+                        # settle back to standby, same as the firmware
+                        # returning to a resting pose after a program ends.
+                        if state["gait"] != "standby":
+                            switch_gait("standby")
+                        else:
+                            state["frame_index"] = len(frames) - 1
+                        break
+                frame = frames[state["frame_index"]]
+
+            apply_frame(body_id, joints, frame)
+            p.stepSimulation()
+            accumulator -= PHYSICS_DT
 
         pos, orn = p.getBasePositionAndOrientation(body_id)
         euler = p.getEulerFromQuaternion(orn)

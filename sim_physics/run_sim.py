@@ -63,6 +63,10 @@ def run(gait_name, cycles, headless):
 
     p.connect(p.DIRECT if headless else p.GUI)
     p.setAdditionalSearchPath(pybullet_data.getDataPath())
+    # See interactive_sim.py for why this matters even though every step
+    # here is already explicit: PyBullet's GUI connection can otherwise
+    # step physics on its own internal clock too, double-stepping.
+    p.setRealTimeSimulation(0)
     p.setGravity(0, 0, -9.81)
     p.setTimeStep(1.0 / 240.0)
     p.loadURDF("plane.urdf")
