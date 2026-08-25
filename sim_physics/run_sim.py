@@ -67,6 +67,16 @@ def run(gait_name, cycles, headless):
     p.setTimeStep(1.0 / 240.0)
     p.loadURDF("plane.urdf")
 
+    if not headless:
+        # Hide PyBullet's default side panels/grid clutter and frame the
+        # camera on the robot instead of its default zoomed-out view.
+        p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
+        p.configureDebugVisualizer(p.COV_ENABLE_SHADOWS, 1)
+        p.resetDebugVisualizerCamera(
+            cameraDistance=0.35, cameraYaw=35, cameraPitch=-25,
+            cameraTargetPosition=[0, 0, 0.04],
+        )
+
     body_id, joints = build_spider_robot()
 
     # Let the robot settle onto its feet under gravity before walking.
