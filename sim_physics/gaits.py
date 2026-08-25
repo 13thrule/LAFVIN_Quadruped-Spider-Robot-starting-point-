@@ -214,10 +214,29 @@ DANCE3 = [
 CENTER = [[90, 90, 90, 90, 90, 90, 90, 90, 300]]  # Servo_Act_1-ish neutral hold
 ZERO = [[135, 45, 135, 45, 45, 135, 45, 135, 300]]  # Servo_Act_0
 
+# Frog-hop: front two legs (RF idx0/1, LF idx4/5) never move at all -- they
+# stay planted as a fixed anchor/pivot the whole cycle. Both rear legs'
+# swing servos (idx2 RR, idx6 LR) sweep through their propulsion direction
+# together while planted (push), then each rear foot lifts/recovers/plants
+# one at a time (not together) so at least 3 feet stay grounded at every
+# instant, same stability principle as the wave gait. Last row's non-ms
+# values equal the first row's, so it loops with zero drift, same check
+# used for WAVE_FORWARD.
+FROGHOP = [
+    [70, 90, 45, 110, 110, 90, 135, 70, 400],   # push: both rear legs sweep back together
+    [70, 90, 45, 90, 110, 90, 135, 70, 200],    # RR foot up
+    [70, 90, 90, 90, 110, 90, 135, 70, 200],    # RR swing recovers
+    [70, 90, 90, 110, 110, 90, 135, 70, 200],   # RR foot down
+    [70, 90, 90, 110, 110, 90, 135, 90, 200],   # LR foot up
+    [70, 90, 90, 110, 110, 90, 90, 90, 200],    # LR swing recovers
+    [70, 90, 90, 110, 110, 90, 90, 70, 200],    # LR foot down -- back to start pose
+]
+
 GAITS = {
     "standby": STANDBY,
     "trot_original": TROT_ORIGINAL,
     "forward": WAVE_FORWARD,
+    "froghop": FROGHOP,
     "backward": BACKWARD,
     "leftshift": LEFTSHIFT,
     "rightshift": RIGHTSHIFT,
@@ -238,4 +257,4 @@ GAITS = {
 # Locomotion gaits loop indefinitely while selected; poses/performance moves
 # play once and return to standby, matching the firmware's own IR behavior
 # (isHoldableLocomotion() in 0.SpiderBot.ino).
-HOLDABLE = {"forward", "trot_original", "backward", "leftshift", "rightshift", "turnleft", "turnright"}
+HOLDABLE = {"forward", "froghop", "trot_original", "backward", "leftshift", "rightshift", "turnleft", "turnright"}

@@ -10,6 +10,7 @@ Controls (click the PyBullet window first so it has keyboard focus):
   Locomotion (hold to keep going, matches the firmware's hold-to-repeat):
     W forward   S backward   A left-shift   D right-shift
     Q turn-left E turn-right T original trot (comparison, hold-capable)
+    G frog-hop (front legs anchored, rear legs push together, hold-capable)
   Poses / performance (one press, plays once, returns to standby):
     1 standby   2 lie       3 hello      4 fighting  5 push-up
     6 sleep     7 dance 1   8 dance 2    9 dance 3   0 center
@@ -53,6 +54,7 @@ LOCOMOTION_KEYS = {
     ord("q"): "turnleft",
     ord("e"): "turnright",
     ord("t"): "trot_original",
+    ord("g"): "froghop",
 }
 
 ONE_SHOT_KEYS = {
@@ -151,7 +153,7 @@ def main():
         "status": p.addUserDebugText("", [0, 0, 0.14], textColorRGB=[1, 1, 1], textSize=1.3),
         "servos": p.addUserDebugText("", [0, 0, 0.11], textColorRGB=[0.7, 0.85, 1], textSize=1.0),
         "legend": p.addUserDebugText(
-            "WASD/QE walk  T trot  1-9,0,- poses  CVBN camera  F follow  []=speed  SPACE pause  R reset",
+            "WASD/QE walk  T trot  G froghop  1-9,0,- poses  CVBN camera  F follow  []=speed  SPACE pause  R reset",
             [0, 0, -0.02], textColorRGB=[0.6, 0.7, 0.9], textSize=1.0,
         ),
         "color_key": p.addUserDebugText(
