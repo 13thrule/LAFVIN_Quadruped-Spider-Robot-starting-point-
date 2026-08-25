@@ -44,7 +44,7 @@ HIP_SIGNS = {
 # photo's wide, low stance. Purely a fixed visual/geometric offset -- baked
 # into the link transforms below, so it doesn't change how gait commands
 # are interpreted in run_sim.py.
-COXA_DOWN_TILT_RAD = math.radians(12)
+COXA_DOWN_TILT_RAD = math.radians(35)
 TIBIA_DOWN_TILT_RAD = math.radians(45)
 
 BODY_COLOR = [0.06, 0.06, 0.07, 1]
