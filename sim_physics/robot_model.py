@@ -164,12 +164,16 @@ def build_spider_robot(start_height=None):
     # the twin ultrasonic-sensor "eyes" on the front face -- both fixed to
     # the base, no physics role, just so the sim is recognizable as this
     # robot and forward-facing is obvious at a glance.
-    head_half = [cfg.BODY_LENGTH_M * 0.22, cfg.BODY_WIDTH_M * 0.30, cfg.BODY_HEIGHT_M * 0.9]
+    # Centered (was 0.15*BODY_LENGTH forward with a 0.22 half-width, so its
+    # near edge almost touched the front hips -- looked lopsided toward one
+    # leg pair instead of centered between all four, as in the reference
+    # photo. Smaller and centered reads much closer to the real proportions.
+    head_half = [cfg.BODY_LENGTH_M * 0.15, cfg.BODY_WIDTH_M * 0.30, cfg.BODY_HEIGHT_M * 0.9]
     head_col, head_vis = _shapes(p.GEOM_BOX, HEAD_COLOR, halfExtents=head_half)
     link_masses.append(0.0001)
     link_col.append(head_col)
     link_vis.append(head_vis)
-    link_pos.append([cfg.BODY_LENGTH_M * 0.15, 0, cfg.BODY_HEIGHT_M / 2 + head_half[2]])
+    link_pos.append([0, 0, cfg.BODY_HEIGHT_M / 2 + head_half[2]])
     link_orn.append([0, 0, 0, 1])
     link_inertial_pos.append([0, 0, 0])
     link_inertial_orn.append([0, 0, 0, 1])
@@ -185,7 +189,7 @@ def build_spider_robot(start_height=None):
         link_col.append(eye_col)
         link_vis.append(eye_vis)
         link_pos.append([
-            cfg.BODY_LENGTH_M * 0.15 + head_half[0] * 0.95,
+            head_half[0] * 0.95,
             eye_y_sign * cfg.BODY_WIDTH_M * 0.16,
             cfg.BODY_HEIGHT_M / 2 + head_half[2],
         ])

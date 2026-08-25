@@ -75,6 +75,8 @@ def run(gait_name, cycles, out_dir):
     for _ in range(120):
         p.stepSimulation()
 
+    start_pos, _ = p.getBasePositionAndOrientation(body_id)
+
     log = []
     worst = {"tilt": -1.0, "sim_time": 0.0}
     fell_at = None
@@ -155,10 +157,25 @@ def run(gait_name, cycles, out_dir):
             cur_run = 0
     longest_run_duration_ms = longest_run * (1000.0 / 240.0)
 
+    end_pos, _ = p.getBasePositionAndOrientation(body_id)
+    dx = end_pos[0] - start_pos[0]
+    dy = end_pos[1] - start_pos[1]
+    net_distance_mm = math.hypot(dx, dy) * 1000.0
+    per_cycle_mm = net_distance_mm / cycle_reached if cycle_reached else 0.0
+    # 3.6 == unit conversion mm/s -> cm/s -> roughly a walking-speed feel;
+    # kept as raw mm/s too since that's what actually matters at this scale.
+    speed_mm_s = net_distance_mm / sim_time if sim_time else 0.0
+
     lines = []
     lines.append(f"gait: {gait_name}")
     lines.append(f"cycles requested: {cycles}   cycles completed: {cycle_reached}")
     lines.append(f"sim_time_reached_s: {sim_time:.2f}")
+    lines.append("")
+    lines.append(
+        f"net_forward_distance_mm: {net_distance_mm:.1f}  "
+        f"({per_cycle_mm:.1f}mm/cycle, {speed_mm_s:.1f}mm/s, "
+        f"heading dx={dx * 1000:.1f}mm dy={dy * 1000:.1f}mm)"
+    )
     lines.append("")
     lines.append(f"max_tilt_deg: {max(tilts):.1f}  (at sim_time {worst['sim_time']:.2f}s)")
     lines.append(f"mean_tilt_deg: {sum(tilts) / len(tilts):.2f}")
