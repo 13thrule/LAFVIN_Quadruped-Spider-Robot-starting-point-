@@ -214,30 +214,29 @@ DANCE3 = [
 CENTER = [[90, 90, 90, 90, 90, 90, 90, 90, 300]]  # Servo_Act_1-ish neutral hold
 ZERO = [[135, 45, 135, 45, 45, 135, 45, 135, 300]]  # Servo_Act_0
 
-# Frog-hop: front two legs (RF idx0/1, LF idx4/5) never move at all -- they
-# stay planted as a fixed anchor/pivot the whole cycle. Both rear legs'
-# swing servos (idx2 RR, idx6 LR) sweep through their propulsion direction
-# together while planted (push), then each rear foot lifts/recovers/plants
-# one at a time (not together) so at least 3 feet stay grounded at every
-# instant, same stability principle as the wave gait. Last row's non-ms
-# values equal the first row's, so it loops with zero drift, same check
-# used for WAVE_FORWARD.
+# Frog-hop: a real frog doesn't crawl with its front legs planted while the
+# back legs paddle -- it crouches to load up, then explodes ALL FOUR legs
+# at once and actually leaves the ground, lands, and stops. That's a
+# discrete one-shot leap, not a continuous locomotion gait -- two earlier
+# versions here got the category wrong (a "front anchored, rear paddling"
+# loop, then just a faster version of the same loop). This one is a real
+# crouch -> launch -> land sequence instead, ONE_SHOT like hello/dances,
+# not HOLDABLE.
 #
-# First version used a 400ms push -- normal walking pace -- and didn't
-# read as a "hop" at all. Per dog_leg_calibrate's own session notes (a
-# different robot, but the same lesson): the springy/leap character came
-# from making the stroke fast/near-instant, not from a bigger motion --
-# their tunable "Snap" parameter was literally stroke duration. Push
-# dropped to 120ms here for the same reason; reset stays gradual (200ms)
-# since those steps are recovery, not the push itself.
+# All 4 feet extend together on the launch row, plus the rear legs' swing
+# servos snap through their propulsion direction for forward thrust while
+# airborne. Every angle used (55/65/115/125) stays within ranges already
+# proven safe elsewhere in this firmware (sleep/dance2/dance3 use the same
+# 45/135 extremes) -- only the *timing* is new and aggressive: the 80ms
+# launch row is faster than the ~2.5ms/degree loaded-MG90S floor from
+# earlier research, which is inherent to what an explosive launch actually
+# requires. That's fine for a single one-off trigger; do NOT make this
+# HOLDABLE/repeating without separately re-checking servo heat/stall risk
+# under repeated rapid-fire use.
 FROGHOP = [
-    [70, 90, 45, 110, 110, 90, 135, 70, 120],   # push: both rear legs snap back together, fast
-    [70, 90, 45, 90, 110, 90, 135, 70, 200],    # RR foot up
-    [70, 90, 90, 90, 110, 90, 135, 70, 200],    # RR swing recovers
-    [70, 90, 90, 110, 110, 90, 135, 70, 200],   # RR foot down
-    [70, 90, 90, 110, 110, 90, 135, 90, 200],   # LR foot up
-    [70, 90, 90, 110, 110, 90, 90, 90, 200],    # LR swing recovers
-    [70, 90, 90, 110, 110, 90, 90, 70, 200],    # LR foot down -- back to start pose
+    [55, 90, 90, 125, 125, 90, 90, 55, 180],    # crouch: all 4 feet compress down together
+    [115, 90, 45, 65, 65, 90, 135, 115, 80],    # launch: all 4 feet extend hard + rear legs snap, fast
+    [70, 90, 90, 110, 110, 90, 90, 70, 350],    # land -- settle back to standing pose
 ]
 
 GAITS = {
@@ -265,4 +264,4 @@ GAITS = {
 # Locomotion gaits loop indefinitely while selected; poses/performance moves
 # play once and return to standby, matching the firmware's own IR behavior
 # (isHoldableLocomotion() in 0.SpiderBot.ino).
-HOLDABLE = {"forward", "froghop", "trot_original", "backward", "leftshift", "rightshift", "turnleft", "turnright"}
+HOLDABLE = {"forward", "trot_original", "backward", "leftshift", "rightshift", "turnleft", "turnright"}

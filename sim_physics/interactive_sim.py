@@ -10,11 +10,10 @@ Controls (click the PyBullet window first so it has keyboard focus):
   Locomotion (hold to keep going, matches the firmware's hold-to-repeat):
     W forward   S backward   A left-shift   D right-shift
     Q turn-left E turn-right T original trot (comparison, hold-capable)
-    G frog-hop (front legs anchored, rear legs push together, hold-capable)
   Poses / performance (one press, plays once, returns to standby):
     1 standby   2 lie       3 hello      4 fighting  5 push-up
     6 sleep     7 dance 1   8 dance 2    9 dance 3   0 center
-    - zero
+    - zero       G frog-hop (crouch, explosive launch, land -- one-shot)
   View:
     C front view   V side view   B top-down view   N reset/iso view
     F toggle camera auto-follow (on by default; turn off to orbit freely
@@ -54,7 +53,6 @@ LOCOMOTION_KEYS = {
     ord("q"): "turnleft",
     ord("e"): "turnright",
     ord("t"): "trot_original",
-    ord("g"): "froghop",
 }
 
 ONE_SHOT_KEYS = {
@@ -69,6 +67,7 @@ ONE_SHOT_KEYS = {
     ord("9"): "dance3",
     ord("0"): "center",
     ord("-"): "zero",
+    ord("g"): "froghop",
 }
 
 # yaw, pitch, distance
