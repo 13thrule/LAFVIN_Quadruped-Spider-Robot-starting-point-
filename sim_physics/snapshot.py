@@ -18,7 +18,7 @@ p.setGravity(0, 0, -9.81)
 p.setTimeStep(1.0 / 240.0)
 p.loadURDF("plane.urdf")
 
-body_id, joints = build_spider_robot()
+body_id, joints, _links = build_spider_robot()
 
 for _ in range(240):
     p.stepSimulation()

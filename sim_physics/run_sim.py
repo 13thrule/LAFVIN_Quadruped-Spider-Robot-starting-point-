@@ -81,7 +81,7 @@ def run(gait_name, cycles, headless):
             cameraTargetPosition=[0, 0, 0.04],
         )
 
-    body_id, joints = build_spider_robot()
+    body_id, joints, _links = build_spider_robot()
 
     # Let the robot settle onto its feet under gravity before walking.
     for _ in range(120):

@@ -219,10 +219,13 @@ def build_spider_robot(start_height=None):
     )
 
     # Only the revolute hip/knee joints are ever driven; the "_fixed" links
-    # (coxa, tibia, decorative head/eyes) have no motor to control.
+    # (coxa, tibia, decorative head/eyes) have no motor to control, but
+    # e.g. the tibia links are still useful to look up for foot-contact
+    # checks and support-polygon visualization.
     joint_index_by_name = {
         name: i for i, name in enumerate(joint_names)
         if name.endswith("_hip") or name.endswith("_knee")
     }
+    link_index_by_name = {name: i for i, name in enumerate(joint_names)}
 
-    return body_id, joint_index_by_name
+    return body_id, joint_index_by_name, link_index_by_name
