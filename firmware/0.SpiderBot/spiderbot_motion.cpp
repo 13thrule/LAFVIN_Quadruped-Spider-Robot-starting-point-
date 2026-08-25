@@ -169,10 +169,34 @@ void SpiderBotMotion::Servo_Setup()
 
 void SpiderBotMotion::calibration()
 {
-    // Simple serial calibration helper kept for bench testing.
-    // Expected command: S,<servo_pin>,<offset>
+    // Simple serial command helper kept for bench testing.
+    // S,<servo_pin>,<offset>  -- per-servo calibration (see below).
+    // A,<action name>         -- trigger any action by its API name (same
+    //   names as the web API's ?action= param / getActionName(), e.g.
+    //   "forward", "dance1", "stop"). Routed through Servo_PROGRAM so it
+    //   goes through the exact same dispatch as IR/web, not a separate path.
     while (Serial.available() > 0) {
         char command = Serial.read();
+
+        if (command == 'A' || command == 'a') {
+            if (Serial.read() == ',') {
+                String actionName = Serial.readStringUntil('\n');
+                actionName.trim();
+                Serial.print(F("A,"));
+                Serial.println(actionName);
+
+                if (actionName == "stop") {
+                    requestRobotStop(PROGRAM_STANDBY);
+                } else {
+                    const RobotActionInfo* action = findRobotActionByName(actionName);
+                    if (action != nullptr) {
+                        Servo_PROGRAM = action->id;
+                    } else {
+                        Serial.println(F("ERR,unknown action"));
+                    }
+                }
+            }
+        }
 
         // Servo command format: S,<servo_pin>,<offset>
         if (command == 'S' || command == 's') {
