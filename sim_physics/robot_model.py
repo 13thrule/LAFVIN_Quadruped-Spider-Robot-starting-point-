@@ -164,13 +164,12 @@ def build_spider_robot(start_height=None):
     # the twin ultrasonic-sensor "eyes" on the front face -- both fixed to
     # the base, no physics role, just so the sim is recognizable as this
     # robot and forward-facing is obvious at a glance.
-    # Corrected from centered (0 offset) back to forward-biased, and
-    # further forward than the original 0.15 guess -- close-up photos of
-    # the actual board (FileShare IMG_2781-2784) show the ultrasonic
-    # sensor module sitting right at the front edge, essentially between
-    # the front two legs, not centered along the body length. My "center
-    # it" fix a few messages ago was wrong; this is the correction.
-    HEAD_CENTER_X_FRAC = 0.32
+    # Flipped to the -X end: the +X end (where HIP_SIGNS puts RF/LF) was
+    # the wrong end -- user confirmed the head appeared backward/on the
+    # rear in the sim. Positioning is purely cosmetic and doesn't affect
+    # gait control (that's driven by servo_map.py's channel roles, not by
+    # this offset), so this only fixes which end looks like the front.
+    HEAD_CENTER_X_FRAC = -0.32
     head_half = [cfg.BODY_LENGTH_M * 0.16, cfg.BODY_WIDTH_M * 0.30, cfg.BODY_HEIGHT_M * 0.9]
     head_col, head_vis = _shapes(p.GEOM_BOX, HEAD_COLOR, halfExtents=head_half)
     link_masses.append(0.0001)
