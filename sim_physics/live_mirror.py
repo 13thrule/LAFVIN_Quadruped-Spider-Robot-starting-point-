@@ -26,10 +26,13 @@ import pybullet_data
 import serial
 
 import robot_config as cfg
-from robot_model import build_spider_robot
+from robot_model import build_spider_robot, LEG_COLOR_NAMES
 from servo_map import LEGS, LEG_CHANNELS, SERVO_CENTER_DEG
 from run_sim import SERVO_MAX_TORQUE_NM, SERVO_MAX_VELOCITY_RAD_S, servo_deg_to_joint_rad
 from interactive_sim import apply_frame, foot_world_position
+
+LEG_LABELS = {"RF": "right-front", "LF": "left-front", "RR": "right-rear", "LR": "left-rear"}
+COLOR_KEY = "  ".join(f"{leg}={LEG_COLOR_NAMES[leg]}({LEG_LABELS[leg]})" for leg in LEGS)
 
 POS_LINE = re.compile(r"POS:([\d,]+)")
 FALL_TILT_DEG = 45
@@ -86,6 +89,7 @@ def main():
         f"mirroring real robot on {args.port} -- move it with the IR remote or app",
         [0, 0, -0.02], textColorRGB=[0.6, 0.7, 0.9], textSize=1.0,
     )
+    p.addUserDebugText(COLOR_KEY, [0, 0, -0.035], textColorRGB=[0.85, 0.85, 0.85], textSize=1.0)
 
     PHYSICS_DT = 1.0 / 240.0
     accumulator = 0.0

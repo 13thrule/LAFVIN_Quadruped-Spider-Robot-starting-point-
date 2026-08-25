@@ -47,10 +47,20 @@ HIP_SIGNS = {
 COXA_DOWN_TILT_RAD = math.radians(12)
 TIBIA_DOWN_TILT_RAD = math.radians(45)
 
-BODY_COLOR = [0.06, 0.06, 0.07, 1]
-HEAD_COLOR = [0.10, 0.10, 0.12, 1]
-LEG_COLOR = [0.04, 0.04, 0.05, 1]
-EYE_COLOR = [0.75, 0.78, 0.8, 1]
+BODY_COLOR = [0.15, 0.15, 0.17, 1]
+
+# Per-leg colors, unambiguous and stable across every script -- replaces an
+# earlier decorative "head" block that kept ending up on the wrong end
+# (centered, then front, then found to be backward) as the way to tell
+# orientation at a glance. A color key is the source of truth now; see
+# each script's on-screen legend for the same mapping.
+LEG_COLORS = {
+    "RF": [0.85, 0.15, 0.15, 1],  # red    -- right front
+    "LF": [0.15, 0.45, 0.9, 1],   # blue   -- left front
+    "RR": [0.95, 0.55, 0.05, 1],  # orange -- right rear
+    "LR": [0.2, 0.75, 0.3, 1],    # green  -- left rear
+}
+LEG_COLOR_NAMES = {"RF": "red", "LF": "blue", "RR": "orange", "LR": "green"}
 
 
 def _shapes(shape_type, color, **kwargs):
@@ -71,8 +81,15 @@ def build_spider_robot(start_height=None):
 
     coxa_half = [cfg.COXA_LENGTH_M / 2, 0.006, 0.006]
     tibia_half = [0.005, 0.005, cfg.TIBIA_LENGTH_M / 2]
-    coxa_col, coxa_vis = _shapes(p.GEOM_BOX, LEG_COLOR, halfExtents=coxa_half)
-    tibia_col, tibia_vis = _shapes(p.GEOM_BOX, LEG_COLOR, halfExtents=tibia_half)
+    # One collision/visual shape pair per leg color (not shared across legs
+    # like before) so each leg renders in its own key color.
+    leg_shapes = {
+        leg: (
+            _shapes(p.GEOM_BOX, LEG_COLORS[leg], halfExtents=coxa_half),
+            _shapes(p.GEOM_BOX, LEG_COLORS[leg], halfExtents=tibia_half),
+        )
+        for leg in LEGS
+    }
 
     link_masses, link_col, link_vis = [], [], []
     link_pos, link_orn = [], []
@@ -81,6 +98,7 @@ def build_spider_robot(start_height=None):
     joint_names = []
 
     for leg in LEGS:
+        (coxa_col, coxa_vis), (tibia_col, tibia_vis) = leg_shapes[leg]
         xs, ys = HIP_SIGNS[leg]
         hip_x = xs * cfg.HIP_X_OFFSET_M
         hip_y = ys * cfg.HIP_Y_OFFSET_M
@@ -160,48 +178,10 @@ def build_spider_robot(start_height=None):
         link_joint_axis.append([0, 0, 0])
         joint_names.append(f"{leg}_tibia_fixed")
 
-    # Decorative-only links matching the photo's raised "head" block and
-    # the twin ultrasonic-sensor "eyes" on the front face -- both fixed to
-    # the base, no physics role, just so the sim is recognizable as this
-    # robot and forward-facing is obvious at a glance.
-    # Flipped to the -X end: the +X end (where HIP_SIGNS puts RF/LF) was
-    # the wrong end -- user confirmed the head appeared backward/on the
-    # rear in the sim. Positioning is purely cosmetic and doesn't affect
-    # gait control (that's driven by servo_map.py's channel roles, not by
-    # this offset), so this only fixes which end looks like the front.
-    HEAD_CENTER_X_FRAC = -0.32
-    head_half = [cfg.BODY_LENGTH_M * 0.16, cfg.BODY_WIDTH_M * 0.30, cfg.BODY_HEIGHT_M * 0.9]
-    head_col, head_vis = _shapes(p.GEOM_BOX, HEAD_COLOR, halfExtents=head_half)
-    link_masses.append(0.0001)
-    link_col.append(head_col)
-    link_vis.append(head_vis)
-    link_pos.append([cfg.BODY_LENGTH_M * HEAD_CENTER_X_FRAC, 0, cfg.BODY_HEIGHT_M / 2 + head_half[2]])
-    link_orn.append([0, 0, 0, 1])
-    link_inertial_pos.append([0, 0, 0])
-    link_inertial_orn.append([0, 0, 0, 1])
-    link_parent.append(0)
-    link_joint_type.append(p.JOINT_FIXED)
-    link_joint_axis.append([0, 0, 0])
-    joint_names.append("head_fixed")
-
-    eye_radius = cfg.BODY_WIDTH_M * 0.10
-    eye_col, eye_vis = _shapes(p.GEOM_SPHERE, EYE_COLOR, radius=eye_radius)
-    for eye_y_sign in (-1, +1):
-        link_masses.append(0.0001)
-        link_col.append(eye_col)
-        link_vis.append(eye_vis)
-        link_pos.append([
-            cfg.BODY_LENGTH_M * HEAD_CENTER_X_FRAC + head_half[0] * 0.95,
-            eye_y_sign * cfg.BODY_WIDTH_M * 0.16,
-            cfg.BODY_HEIGHT_M / 2 + head_half[2],
-        ])
-        link_orn.append([0, 0, 0, 1])
-        link_inertial_pos.append([0, 0, 0])
-        link_inertial_orn.append([0, 0, 0, 1])
-        link_parent.append(0)
-        link_joint_type.append(p.JOINT_FIXED)
-        link_joint_axis.append([0, 0, 0])
-        joint_names.append(f"eye_fixed_{eye_y_sign}")
+    # No decorative head/eyes -- that kept ending up on the wrong end
+    # (centered, then front, then found to be backward) as a way to judge
+    # orientation. Per-leg colors (LEG_COLORS above) plus each script's
+    # on-screen legend are the unambiguous source of truth now.
 
     if start_height is None:
         rise = cfg.COXA_LENGTH_M * math.sin(COXA_DOWN_TILT_RAD) + cfg.TIBIA_LENGTH_M * math.cos(TIBIA_DOWN_TILT_RAD)
