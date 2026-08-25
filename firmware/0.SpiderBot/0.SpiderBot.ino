@@ -67,18 +67,15 @@ static void runRobotProgram(int programId);
 static float measureAvoidDistanceCm();
 
 // Only locomotion commands make sense to chain continuously while a button
-// stays held -- poses/performance moves (hello, dances, etc.) still run
-// once per keypress. PROGRAM_FORWARD is deliberately NOT here even though
-// it's a movement command: forward() is now the frog-hop (crouch + an
-// explosive 80ms launch, faster than a loaded MG90S can perfectly track),
-// not a walk. The fast inner chain loop below skips the normal 150ms
-// decode debounce entirely for zero-gap repeats, which is fine for a
-// gentle walking gait but would rapid-fire that aggressive launch with no
-// rest between hops. Holding Forward still repeats (via the outer repeat
-// path, same as any other action), just with the normal debounce gap
-// between each hop instead of back-to-back with none.
+// stays held -- poses/performance moves (hello, dances, sit/bow/shake,
+// etc.) still run once per keypress. PROGRAM_FORWARD is back to a genuine
+// gentle walking gait (the lunge experiment didn't feel right on real
+// hardware and was dropped), so it belongs here again -- the fast inner
+// chain loop below skips the normal 150ms decode debounce entirely for
+// zero-gap repeats, which is exactly what a held-down walk needs.
 static bool isHoldableLocomotion(int programId) {
   switch (programId) {
+    case PROGRAM_FORWARD:
     case PROGRAM_BACKWARD:
     case PROGRAM_LEFTSHIFT:
     case PROGRAM_RIGHTSHIFT:
@@ -404,6 +401,15 @@ static void runRobotProgram(int programId)
       break;
     case PROGRAM_DANCE3:
       robot.dance3();
+      break;
+    case PROGRAM_SIT:
+      robot.sit();
+      break;
+    case PROGRAM_BOW:
+      robot.bow();
+      break;
+    case PROGRAM_SHAKE:
+      robot.shake();
       break;
     case PROGRAM_AVOID:
       Avoid();

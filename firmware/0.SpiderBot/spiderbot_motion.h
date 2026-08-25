@@ -38,6 +38,9 @@ public:
     void dance1(); // Dance motion 1.
     void dance2(); // Dance motion 2.
     void dance3(); // Dance motion 3.
+    void sit(); // Sit pose (rear tucked, front standing).
+    void bow(); // Bow (front dips down and back up).
+    void shake(); // Body wiggle in place.
     void center();
     void zero();
 

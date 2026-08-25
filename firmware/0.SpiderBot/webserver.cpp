@@ -38,6 +38,9 @@ static const RobotActionInfo kRobotActions[] = {
     {PROGRAM_DANCE1, "dance1", "舞步1"},
     {PROGRAM_DANCE2, "dance2", "舞步2"},
     {PROGRAM_DANCE3, "dance3", "舞步3"},
+    {PROGRAM_SIT, "sit", "坐下"},
+    {PROGRAM_BOW, "bow", "鞠躬"},
+    {PROGRAM_SHAKE, "shake", "摇摆"},
     {PROGRAM_AVOID, "avoid", "避障"},
     {PROGRAM_CENTER, "center", "中位"},
     {PROGRAM_ZERO, "zero", "归零"}
@@ -52,48 +55,87 @@ static const char INDEX_HTML[] PROGMEM = R"rawliteral(
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>QuadBot Debug</title>
 <style>
+:root{
+  --bg:#090c12;--panel:#10141d;--panel-2:#141a26;--border:#212939;--border-soft:#1a212e;
+  --text:#e6ebf2;--text-dim:#8492a6;--text-faint:#576073;
+  --cyan:#2dd4ee;--cyan-dim:#0e2530;
+  --amber:#f5b942;--amber-dim:#2e2411;
+  --violet:#b18cf5;--violet-dim:#231a35;
+  --red:#f2685c;--red-dim:#2c1416;
+  --green:#3ddc97;
+  --mono:ui-monospace,"Cascadia Code","Segoe UI Mono",Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:Arial,sans-serif;background:#0f172a;color:#e5e7eb;min-height:100vh;overflow:auto}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;overflow:auto;background-image:radial-gradient(circle at 15% 0%,#101825 0%,var(--bg) 45%)}
 .page{min-height:100vh;display:flex;flex-direction:column}
-.bar{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px;background:#111827;border-bottom:1px solid #243041}
-.title{font-size:1rem;font-weight:700;color:#93c5fd}
+.bar{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 16px;background:rgba(9,12,18,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--border)}
+.brand{display:flex;align-items:center;gap:9px}
+.brand-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
+.title{font-size:1rem;font-weight:700;letter-spacing:.01em}
+.title small{display:block;font-size:.68rem;font-weight:600;color:var(--text-faint);letter-spacing:.08em;text-transform:uppercase;margin-top:1px}
 .bar-actions{display:flex;gap:8px}
-.tool-btn{border:none;border-radius:10px;padding:9px 12px;font-size:.88rem;font-weight:700;cursor:pointer;color:#f8fafc;background:#1f3b64;touch-action:manipulation}
-.tool-btn.alt{background:#374151}
-.main{flex:1;display:flex;flex-direction:column;gap:14px;padding:14px;padding-bottom:max(18px,env(safe-area-inset-bottom))}
-.panel{background:#111827;border:1px solid #243041;border-radius:16px;padding:12px}
-.panel-title{font-size:.84rem;font-weight:700;color:#93c5fd;margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em}
-.grid{display:grid;gap:10px}
+.tool-btn{border:1px solid var(--border);border-radius:9px;padding:8px 12px;font-size:.8rem;font-weight:600;cursor:pointer;color:var(--text);background:var(--panel-2);touch-action:manipulation}
+.tool-btn.alt{color:var(--text-dim)}
+.main{flex:1;display:flex;flex-direction:column;gap:12px;padding:14px;padding-bottom:max(20px,env(safe-area-inset-bottom));max-width:520px;margin:0 auto;width:100%}
+.panel{background:var(--panel);border:1px solid var(--border-soft);border-radius:16px;padding:14px}
+.panel-title{font-size:.72rem;font-weight:700;color:var(--text-faint);margin-bottom:10px;text-transform:uppercase;letter-spacing:.09em}
+.grid{display:grid;gap:9px}
 .grid3{grid-template-columns:repeat(3,minmax(0,1fr))}
-.btn{min-height:56px;width:100%;border:none;border-radius:12px;font-size:.92rem;font-weight:700;cursor:pointer;color:#1f2937;touch-action:manipulation}
-.btn:active{opacity:.72}
-.dir{background:#bfdbfe}
-.turn{background:#bbf7d0}
-.state{background:#fde68a}
-.act{background:#fed7aa}
-.sleep{background:#fecaca}
-.dance{background:#ddd6fe}
-.overlay{position:fixed;inset:0;z-index:30;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.72);opacity:0;pointer-events:none;transition:opacity .16s ease}
+.btn{min-height:54px;width:100%;border:1px solid var(--border);border-radius:12px;font-size:.86rem;font-weight:600;cursor:pointer;color:var(--text);background:var(--panel-2);touch-action:manipulation;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:transform .08s ease,background .12s ease}
+.btn:active{transform:scale(.96);background:#1b2331}
+.btn .glyph{font-size:1.05rem;line-height:1;font-family:var(--mono)}
+.btn.on-cyan{color:var(--cyan)}
+.btn.on-amber{color:var(--amber)}
+.btn.on-violet{color:var(--violet)}
+.btn.on-red{color:var(--red);background:var(--red-dim);border-color:rgba(242,104,92,.35)}
+.dpad{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.dpad .fwd{grid-column:2}
+.dpad .bwd{grid-column:2}
+.status{display:flex;align-items:center;justify-content:space-between;padding:13px 16px}
+.status-left{display:flex;align-items:center;gap:10px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--text-faint);flex-shrink:0}
+.dot.busy{background:var(--amber);animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(245,185,66,.55)}50%{box-shadow:0 0 0 5px rgba(245,185,66,0)}}
+.status-label{font-size:.68rem;font-weight:700;color:var(--text-faint);text-transform:uppercase;letter-spacing:.08em}
+.status-name{font-family:var(--mono);font-size:.92rem;font-weight:600;color:var(--text);margin-top:1px}
+@media (prefers-reduced-motion:reduce){.dot.busy{animation:none}}
+.overlay{position:fixed;inset:0;z-index:30;display:flex;align-items:flex-end;justify-content:center;background:rgba(4,6,10,.78);opacity:0;pointer-events:none;transition:opacity .16s ease}
 .overlay.show{opacity:1;pointer-events:auto}
-.sheet{width:min(560px,100%);max-height:88vh;background:#111827;border-radius:18px 18px 0 0;border:1px solid #243041;border-bottom:none;display:flex;flex-direction:column}
-.sheet-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #243041}
-.sheet-title{font-size:.95rem;font-weight:700;color:#93c5fd}
-.sheet-body{padding:12px;overflow:auto}
-.close-btn{border:none;background:none;color:#9ca3af;font-size:1.4rem;line-height:1;cursor:pointer}
-table{width:100%;border-collapse:collapse;font-size:.84rem}
-th,td{padding:8px 6px;text-align:center;border-bottom:1px solid #1f2937}
-th{color:#9ca3af;font-weight:600}
-.group td{padding-top:12px;padding-bottom:6px;text-align:left;color:#93c5fd;font-size:.78rem;font-weight:700;border-bottom:none}
-input[type=number]{width:68px;padding:6px 4px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:#f8fafc;text-align:center}
-.set-btn{border:none;border-radius:8px;background:#14532d;color:#dcfce7;padding:7px 10px;font-size:.8rem;font-weight:700;cursor:pointer}
-.wide-btn{width:100%;margin-top:12px;padding:11px;border:none;border-radius:10px;background:#1d4ed8;color:#eff6ff;font-size:.9rem;font-weight:700;cursor:pointer}
-.hint{font-size:.78rem;color:#94a3b8;margin-top:8px}
+.sheet{width:min(560px,100%);max-height:88vh;background:var(--panel);border-radius:18px 18px 0 0;border:1px solid var(--border);border-bottom:none;display:flex;flex-direction:column}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border-soft)}
+.sheet-title{font-size:.9rem;font-weight:700}
+.sheet-body{padding:14px;overflow:auto}
+.close-btn{border:none;background:none;color:var(--text-dim);font-size:1.4rem;line-height:1;cursor:pointer}
+table{width:100%;border-collapse:collapse;font-size:.82rem}
+th,td{padding:8px 6px;text-align:center;border-bottom:1px solid var(--border-soft)}
+th{color:var(--text-faint);font-weight:600;font-size:.72rem;text-transform:uppercase;letter-spacing:.05em}
+.group td{padding-top:14px;padding-bottom:6px;text-align:left;color:var(--cyan);font-size:.74rem;font-weight:700;border-bottom:none;text-transform:uppercase;letter-spacing:.06em}
+input[type=number]{width:64px;padding:6px 4px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);text-align:center;font-family:var(--mono)}
+.set-btn{border:1px solid #1e4633;border-radius:8px;background:var(--green);color:#052e1c;padding:7px 11px;font-size:.76rem;font-weight:700;cursor:pointer}
+.wide-btn{width:100%;margin-top:14px;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--panel-2);color:var(--text);font-size:.86rem;font-weight:600;cursor:pointer}
+.hint{font-size:.76rem;color:var(--text-faint);margin-top:9px;line-height:1.5}
+.prog-row{display:flex;gap:8px;margin-bottom:10px}
+.prog-select{flex:1;min-width:0;padding:9px 8px;border-radius:9px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.84rem}
+.prog-pause{width:70px;padding:9px 6px;border-radius:9px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:var(--mono);text-align:center}
+.prog-list{display:flex;flex-direction:column;gap:6px;margin-bottom:10px;max-height:240px;overflow:auto}
+.prog-step{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--panel-2);border:1px solid var(--border-soft);border-radius:9px;font-size:.84rem}
+.prog-step.active{border-color:var(--cyan);background:var(--cyan-dim)}
+.prog-step .idx{color:var(--text-faint);font-family:var(--mono);font-size:.78rem;width:16px;flex-shrink:0}
+.prog-step .name{flex:1}
+.prog-step .pause{color:var(--text-faint);font-family:var(--mono);font-size:.78rem;flex-shrink:0}
+.prog-step .rm{border:none;background:none;color:var(--text-faint);font-size:1.15rem;cursor:pointer;line-height:1;padding:0 2px;flex-shrink:0}
+.prog-empty{color:var(--text-faint);font-size:.82rem;padding:6px 2px}
+.prog-controls{display:grid;grid-template-columns:1fr 1fr auto;gap:8px}
 </style>
 </head>
 <body>
 <div class="page">
   <div class="bar">
-    <div class="title">QuadBot Debug</div>
+    <div class="brand">
+      <div class="brand-dot"></div>
+      <div class="title">QuadBot<small>Control Console</small></div>
+    </div>
     <div class="bar-actions">
       <button class="tool-btn" onclick="openCal()">Calibration</button>
       <button class="tool-btn alt" onclick="hideDebug()">Hide</button>
@@ -101,31 +143,75 @@ input[type=number]{width:68px;padding:6px 4px;border-radius:8px;border:1px solid
   </div>
 
   <div class="main">
+    <div class="panel status">
+      <div class="status-left">
+        <div id="statusDot" class="dot"></div>
+        <div>
+          <div class="status-label">Status</div>
+          <div id="statusName" class="status-name">--</div>
+        </div>
+      </div>
+    </div>
+
     <div class="panel">
-      <div class="panel-title">Directional Control</div>
-      <div class="grid grid3">
-        <button class="btn turn" onclick="pm(6)">Turn Left</button>
-        <button class="btn dir" onclick="pm(2)">Forward</button>
-        <button class="btn turn" onclick="pm(7)">Turn Right</button>
-        <button class="btn dir" onclick="pm(4)">Left Shift</button>
-        <button class="btn dir" onclick="pm(3)">Backward</button>
-        <button class="btn dir" onclick="pm(5)">Right Shift</button>
+      <div class="panel-title">Movement</div>
+      <div class="dpad">
+        <button class="btn on-cyan" onclick="pm(6)"><span class="glyph">&#8630;</span>Turn Left</button>
+        <button class="btn on-cyan fwd" onclick="pm(2)"><span class="glyph">&#9650;</span>Forward</button>
+        <button class="btn on-cyan" onclick="pm(7)"><span class="glyph">&#8631;</span>Turn Right</button>
+        <button class="btn on-cyan" onclick="pm(4)"><span class="glyph">&#9664;</span>Left Shift</button>
+        <button class="btn on-cyan bwd" onclick="pm(3)"><span class="glyph">&#9660;</span>Backward</button>
+        <button class="btn on-cyan" onclick="pm(5)"><span class="glyph">&#9654;</span>Right Shift</button>
       </div>
     </div>
 
     <div class="panel">
       <div class="panel-title">Actions</div>
       <div class="grid grid3">
-        <button class="btn state" onclick="pm(1)">Standby</button>
-        <button class="btn act" onclick="pm(9)">Hello</button>
-        <button class="btn act" onclick="pm(11)">Push Up</button>
-        <button class="btn act" onclick="pm(8)">Lie</button>
-        <button class="btn act" onclick="pm(10)">Fighting</button>
-        <button class="btn sleep" onclick="pm(12)">Sleep</button>
-        <button class="btn dance" onclick="pm(13)">Dance 1</button>
-        <button class="btn dance" onclick="pm(14)">Dance 2</button>
-        <button class="btn dance" onclick="pm(15)">Dance 3</button>
+        <button class="btn on-amber" onclick="pm(1)">Standby</button>
+        <button class="btn on-amber" onclick="pm(9)">Hello</button>
+        <button class="btn on-amber" onclick="pm(11)">Push Up</button>
+        <button class="btn on-amber" onclick="pm(8)">Lie</button>
+        <button class="btn on-amber" onclick="pm(10)">Fighting</button>
+        <button class="btn on-amber" onclick="pm(12)">Sleep</button>
+        <button class="btn on-violet" onclick="pm(13)">Dance 1</button>
+        <button class="btn on-violet" onclick="pm(14)">Dance 2</button>
+        <button class="btn on-violet" onclick="pm(15)">Dance 3</button>
       </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Personality</div>
+      <div class="grid grid3">
+        <button class="btn on-violet" onclick="pm(16)">Sit</button>
+        <button class="btn on-violet" onclick="pm(17)">Bow</button>
+        <button class="btn on-violet" onclick="pm(18)">Shake</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Autonomy</div>
+      <div class="grid grid3">
+        <button class="btn on-cyan" onclick="pm(21)">Avoid Mode</button>
+        <button class="btn on-red" onclick="stopRobot()">Stop</button>
+      </div>
+      <div class="hint">Avoid Mode needs the firmware built with ENABLE_ULTRASONIC=1, which permanently repurposes the USB serial pins for the sensor -- calibrate.py/send_action.py/live_mirror.py won't work at all on that build, not just while this is running. Reflash with ENABLE_ULTRASONIC=0 to get serial tools back.</div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Movement Programmer</div>
+      <div class="prog-row">
+        <select id="progAction" class="prog-select"></select>
+        <input type="number" id="progPause" class="prog-pause" min="0" max="5000" step="100" value="300">
+        <button class="tool-btn" onclick="addStep()">Add</button>
+      </div>
+      <div id="progList" class="prog-list"></div>
+      <div class="prog-controls">
+        <button class="btn on-cyan" id="progPlayBtn" onclick="playRoutine()">Play</button>
+        <button class="btn on-red" onclick="stopRoutine()">Stop</button>
+        <button class="tool-btn alt" onclick="clearRoutine()">Clear</button>
+      </div>
+      <div class="hint">Chains existing moves into a sequence. Pause is how long to wait, after each move actually finishes, before starting the next. Saved automatically in this browser.</div>
     </div>
   </div>
 </div>
@@ -167,6 +253,7 @@ input[type=number]{width:68px;padding:6px 4px;border-radius:8px;border:1px solid
 
 <script>
 function pm(v){ fetch('/controller?pm=' + v, { cache: 'no-store' }); }
+function stopRobot(){ fetch('/api/v1/stop', { method: 'POST', cache: 'no-store' }); }
 function closeCal(){ document.getElementById('overlay').classList.remove('show'); }
 function bgClose(e){ if(e.target.id === 'overlay') closeCal(); }
 function save(id){
@@ -184,6 +271,143 @@ function openCal(){
       document.getElementById('overlay').classList.add('show');
     });
 }
+function pollStatus(){
+  fetch('/api/v1/state', { cache: 'no-store' })
+    .then(function(r){ return r.json(); })
+    .then(function(json){
+      var data = json.data;
+      if (!data) return;
+      document.getElementById('statusName').textContent = data.current_action_label + (data.busy ? ' (moving)' : '');
+      document.getElementById('statusDot').classList.toggle('busy', !!data.busy);
+    })
+    .catch(function(){});
+}
+pollStatus();
+setInterval(pollStatus, 1000);
+
+var ROUTINE_KEY = 'quadbot_routine_v1';
+var routineSteps = [];
+try { routineSteps = JSON.parse(localStorage.getItem(ROUTINE_KEY) || '[]'); } catch (e) { routineSteps = []; }
+var routinePlaying = false;
+var routineCancel = false;
+var routineCurrentIndex = -1;
+
+function loadActionOptions(){
+  fetch('/api/v1/info', { cache: 'no-store' })
+    .then(function(r){ return r.json(); })
+    .then(function(json){
+      var actions = (json.data && json.data.actions) || [];
+      var sel = document.getElementById('progAction');
+      sel.innerHTML = '';
+      actions.forEach(function(a){
+        if (a.name === 'center' || a.name === 'zero') return;
+        var opt = document.createElement('option');
+        opt.value = a.name;
+        opt.textContent = a.name;
+        sel.appendChild(opt);
+      });
+    })
+    .catch(function(){});
+}
+
+function saveRoutine(){ try { localStorage.setItem(ROUTINE_KEY, JSON.stringify(routineSteps)); } catch (e) {} }
+
+function renderRoutine(){
+  var list = document.getElementById('progList');
+  list.innerHTML = '';
+  if (routineSteps.length === 0) {
+    list.innerHTML = '<div class="prog-empty">No steps yet -- add one above.</div>';
+    return;
+  }
+  routineSteps.forEach(function(step, i){
+    var row = document.createElement('div');
+    row.className = 'prog-step' + (routinePlaying && i === routineCurrentIndex ? ' active' : '');
+    var idx = document.createElement('span'); idx.className = 'idx'; idx.textContent = (i + 1);
+    var name = document.createElement('span'); name.className = 'name'; name.textContent = step.action;
+    var pause = document.createElement('span'); pause.className = 'pause'; pause.textContent = '+' + step.pause + 'ms';
+    var rm = document.createElement('button'); rm.className = 'rm'; rm.innerHTML = '&times;';
+    rm.onclick = function(){ removeStep(i); };
+    row.appendChild(idx); row.appendChild(name); row.appendChild(pause); row.appendChild(rm);
+    list.appendChild(row);
+  });
+}
+
+function addStep(){
+  var action = document.getElementById('progAction').value;
+  var pause = parseInt(document.getElementById('progPause').value, 10) || 0;
+  if (!action) return;
+  routineSteps.push({ action: action, pause: pause });
+  saveRoutine();
+  renderRoutine();
+}
+
+function removeStep(i){
+  if (routinePlaying) return;
+  routineSteps.splice(i, 1);
+  saveRoutine();
+  renderRoutine();
+}
+
+function clearRoutine(){
+  if (routinePlaying) return;
+  routineSteps = [];
+  saveRoutine();
+  renderRoutine();
+}
+
+function sleep(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+
+function waitUntilIdle(){
+  return new Promise(function(resolve){
+    (function poll(){
+      if (routineCancel) { resolve(); return; }
+      fetch('/api/v1/state', { cache: 'no-store' })
+        .then(function(r){ return r.json(); })
+        .then(function(json){
+          var busy = json.data && json.data.busy;
+          if (routineCancel || !busy) { resolve(); return; }
+          setTimeout(poll, 150);
+        })
+        .catch(function(){ resolve(); });
+    })();
+  });
+}
+
+function playRoutine(){
+  if (routinePlaying || routineSteps.length === 0) return;
+  routinePlaying = true;
+  routineCancel = false;
+  document.getElementById('progPlayBtn').textContent = 'Playing...';
+  (async function(){
+    for (var i = 0; i < routineSteps.length; i++) {
+      if (routineCancel) break;
+      routineCurrentIndex = i;
+      renderRoutine();
+      var step = routineSteps[i];
+      await fetch('/api/v1/action', {
+        method: 'POST', cache: 'no-store',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: step.action })
+      });
+      await sleep(200);
+      await waitUntilIdle();
+      if (routineCancel) break;
+      await sleep(step.pause);
+    }
+    routinePlaying = false;
+    routineCurrentIndex = -1;
+    document.getElementById('progPlayBtn').textContent = 'Play';
+    renderRoutine();
+  })();
+}
+
+function stopRoutine(){
+  routineCancel = true;
+  fetch('/api/v1/stop', { method: 'POST', cache: 'no-store' });
+}
+
+loadActionOptions();
+renderRoutine();
 </script>
 </body>
 </html>
@@ -197,11 +421,11 @@ static const char DEBUG_LOCKED_HTML[] PROGMEM = R"rawliteral(
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>QuadBot Debug Locked</title>
 <style>
-body{margin:0;font-family:Arial,sans-serif;background:#0f172a;color:#e5e7eb;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-.card{width:min(420px,100%);background:#111827;border:1px solid #243041;border-radius:16px;padding:22px}
-h1{margin:0 0 12px;font-size:1.15rem;color:#93c5fd}
-p{margin:0 0 10px;line-height:1.5;color:#cbd5e1}
-code{background:#0b1220;padding:2px 6px;border-radius:6px}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:#090c12;background-image:radial-gradient(circle at 15% 0%,#101825 0%,#090c12 45%);color:#e6ebf2;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.card{width:min(420px,100%);background:#10141d;border:1px solid #1a212e;border-radius:16px;padding:22px}
+h1{margin:0 0 12px;font-size:1.1rem;color:#2dd4ee}
+p{margin:0 0 10px;line-height:1.55;color:#8492a6;font-size:.92rem}
+code{background:#090c12;border:1px solid #212939;padding:2px 6px;border-radius:6px;font-family:ui-monospace,"Cascadia Code","Segoe UI Mono",Consolas,monospace;color:#e6ebf2}
 </style>
 </head>
 <body>

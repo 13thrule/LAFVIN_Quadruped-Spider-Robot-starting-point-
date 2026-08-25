@@ -170,7 +170,19 @@ void SpiderBotMotion::Servo_Setup()
 void SpiderBotMotion::calibration()
 {
     // Simple serial command helper kept for bench testing.
-    // S,<servo_pin>,<offset>  -- per-servo calibration (see below).
+    // S,<servo_pin>,<offset>  -- LIVE bench-test position: drives the servo
+    //   straight to Servo_Act_0[pin]+offset for previewing a candidate pose
+    //   without flashing. NOT persisted, and deliberately bypasses the trim
+    //   system entirely (calls GPIO*SERVO.write() directly, not through
+    //   Set_PWM_to_Servo) -- this is a one-off test move, not a correction.
+    // T,<servo_pin>,<trim>    -- PERSISTENT per-servo trim, written to the
+    //   same EEPROM slot (via writeKeyValue()) the web dashboard's
+    //   calibration modal / /api/v1/calibration already use, so it's added
+    //   to every future command via Set_PWM_to_Servo and survives a reboot.
+    //   Deliberately a separate command from S, above -- they mean
+    //   different things (a live test angle vs. a permanent correction)
+    //   and conflating them would silently bake a one-off test position
+    //   into every future move.
     // A,<action name>         -- trigger any action by its API name (same
     //   names as the web API's ?action= param / getActionName(), e.g.
     //   "forward", "dance1", "stop"). Routed through Servo_PROGRAM so it
@@ -246,6 +258,43 @@ void SpiderBotMotion::calibration()
                     break;
                 default:
                     break;
+            }
+        }
+
+        // Persistent trim command: T,<servo_pin>,<trim> -- see the comment
+        // block above for why this is a separate command from S,.
+        if (command == 'T' || command == 't') {
+            Serial.print(command);
+            Serial.print(',');
+            int servoNo = Serial.parseInt();
+            Serial.print(servoNo);
+            Serial.print(',');
+            int trimValue = Serial.parseInt();
+            Serial.print(trimValue);
+            Serial.println();
+
+            if (trimValue < -124 || trimValue > 124) {
+                Serial.println(F("ERR,trim out of range (-124..124)"));
+            } else {
+                int servoIndex = -1;
+                switch (servoNo) {
+                    case 14: servoIndex = 0; break;
+                    case 12: servoIndex = 1; break;
+                    case 13: servoIndex = 2; break;
+                    case 15: servoIndex = 3; break;
+                    case 16: servoIndex = 4; break;
+                    case 5:  servoIndex = 5; break;
+                    case 4:  servoIndex = 6; break;
+                    case 2:  servoIndex = 7; break;
+                    default: break;
+                }
+
+                if (servoIndex < 0) {
+                    Serial.println(F("ERR,unknown servo pin"));
+                } else {
+                    writeKeyValue(servoIndex, trimValue);
+                    Serial.println(F("T,saved"));
+                }
             }
         }
     }
@@ -329,6 +378,21 @@ void SpiderBotMotion::dance2()
 void SpiderBotMotion::dance3()
 {
     Servo_PROGRAM_Run(Servo_Prg_15, Servo_Prg_15_Step);
+}
+
+void SpiderBotMotion::sit()
+{
+    Servo_PROGRAM_Run(Servo_Prg_17, Servo_Prg_17_Step);
+}
+
+void SpiderBotMotion::bow()
+{
+    Servo_PROGRAM_Run(Servo_Prg_18, Servo_Prg_18_Step);
+}
+
+void SpiderBotMotion::shake()
+{
+    Servo_PROGRAM_Run(Servo_Prg_19, Servo_Prg_19_Step);
 }
 
 void SpiderBotMotion::center()

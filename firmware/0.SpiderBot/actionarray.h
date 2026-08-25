@@ -32,34 +32,40 @@ const int Servo_Prg_1[][ALLMATRIX] PROGMEM = {
   {  60,  90,  90, 120, 120,  90,  90,  60, 500 }, // standby
 };
 
-// Forward -- frog-hop: crouch (all 4 feet compress down together), then an
-// explosive launch (all 4 feet extend hard together + rear legs' swing
-// servos snap for forward thrust, 80ms -- faster than a loaded MG90S can
-// perfectly track, which real explosive extension inherently requires),
-// then land/settle back to standing. Ported from sim_physics/gaits.py's
-// FROGHOP after verifying it in PyBullet: 46ms of all 4 feet
-// simultaneously off the ground during the launch (genuine air time, not
-// just a name), stable throughout (max tilt 1.8deg over 3 cycles), real
-// forward progress (~14mm per hop). All angles used (55/65/115/125) stay
-// within ranges already proven safe elsewhere in this firmware (sleep,
-// dance2, dance3 use the same 45/135 extremes) -- only the 80ms launch
-// timing is aggressive, which is inherent to what a real leap needs.
-//
-// This replaces the previous statically-stable wave/crawl gait that used
-// to live here (still available, unused, as Servo_Prg_16 below) -- a
-// deliberate choice to make "forward" a hop instead of a walk, not an
-// accidental loss of that earlier work.
-// Timing cut further after real-hardware testing: the original
-// 180/80/350ms (610ms total) read as slow/deliberate even with the fast
-// launch buried in the middle -- a real frog's whole crouch-to-leap is
-// over almost instantly, not just the launch instant. Now 60/60/150
-// (270ms total, well under half).
-const int Servo_Prg_2_Step = 3;
+// Forward -- statically-stable wave/crawl walk (one leg lifts at a time:
+// RF -> LF -> LR -> RR, three feet always grounded). The lunge/frog-hop
+// tried here didn't feel right on real hardware and was dropped -- this
+// is the same geometry as the previously-preserved Servo_Prg_16 below,
+// just retuned from 200ms/step to 90ms/step and re-validated in
+// sim_physics/observe.py: speed went from 1.3mm/s to 5.1mm/s (4x) with
+// stability essentially unchanged (max tilt 9.3deg -> 8.4deg over 3
+// cycles, stayed upright both times). 90ms/step is close to the
+// loaded-MG90S ~2.5ms/degree tracking floor from earlier research for
+// this gait's largest per-step angle changes (up to ~45deg), so this is
+// close to as fast as this gait can go without commanding faster than
+// the servos can actually track.
+const int Servo_Prg_2_Step = 16;
 const int Servo_Prg_2[][ALLMATRIX] PROGMEM = {
   // G14, G12, G13, G15, G16,  G5,  G4,  G2,  ms
-  {  55,  90,  90, 125, 125,  90,  90,  55,  60 }, // crouch: all 4 feet compress down together, fast
-  { 115,  90,  45,  65,  65,  90, 135, 115,  60 }, // launch: all 4 feet extend hard + rear legs snap, fast
-  {  70,  90,  90, 110, 110,  90,  90,  70, 150 }, // land -- settle back to standing pose
+  {  70,  90,  75, 110, 110, 105, 105,  70,  90 }, // RF turn: shift RR/LF/LR
+  {  90,  90,  75, 110, 110, 105, 105,  70,  90 }, // RF foot up
+  {  90, 135,  75, 110, 110, 105, 105,  70,  90 }, // RF swing recovers
+  {  70, 135,  75, 110, 110, 105, 105,  70,  90 }, // RF foot down
+
+  {  70, 120,  60, 110, 110, 105, 120,  70,  90 }, // LF turn: shift RF/RR/LR
+  {  70, 120,  60, 110,  90, 105, 120,  70,  90 }, // LF foot up
+  {  70, 120,  60, 110,  90,  60, 120,  70,  90 }, // LF swing recovers
+  {  70, 120,  60, 110, 110,  60, 120,  70,  90 }, // LF foot down
+
+  {  70, 105,  45, 110, 110,  75, 120,  70,  90 }, // LR turn: shift RF/RR/LF
+  {  70, 105,  45, 110, 110,  75, 120,  90,  90 }, // LR foot up
+  {  70, 105,  45, 110, 110,  75,  75,  90,  90 }, // LR swing recovers
+  {  70, 105,  45, 110, 110,  75,  75,  70,  90 }, // LR foot down
+
+  {  70,  90,  45, 110, 110,  90,  90,  70,  90 }, // RR turn: shift RF/LF/LR
+  {  70,  90,  45,  90, 110,  90,  90,  70,  90 }, // RR foot up
+  {  70,  90,  90,  90, 110,  90,  90,  70,  90 }, // RR swing recovers
+  {  70,  90,  90, 110, 110,  90,  90,  70,  90 }, // RR foot down -- back to start pose
 };
 
 // Backward
@@ -154,9 +160,10 @@ const int Servo_Prg_8[][ALLMATRIX] PROGMEM = {
 // 2:G13=Right rear leg,  3:G15=Right rear foot
 // 4:G16=Left front foot, 5:G5=Left front leg
 // 6:G4=Left rear leg,    7:G2=Left rear foot
-const int Servo_Prg_9_Step = 10;
+const int Servo_Prg_9_Step = 11;
 const int Servo_Prg_9[][ALLMATRIX] PROGMEM = {
   // G14, G12, G13, G15, G16,  G5,  G4,  G2,  ms
+  {  70,  90,  90, 110, 110,  90,  90,  70, 300 }, // re-establish the standing pose this action assumes
   {  60,  90,  125, 80, 120,  82, 90,  50, 280 }, // lean into a 3-leg support pose
   {  60,  90,  125, 80,  92,  74, 90,  50, 220 }, // left hand halfway up
   {  60,  90,  125, 80,  38,  62, 90,  50, 240 }, // left hand fully up
@@ -170,9 +177,10 @@ const int Servo_Prg_9[][ALLMATRIX] PROGMEM = {
 };
 
 // Fighting
-const int Servo_Prg_10_Step = 12;
+const int Servo_Prg_10_Step = 13;
 const int Servo_Prg_10[][ALLMATRIX] PROGMEM = {
   // G14, G12, G13, G15, G16,  G5,  G4,  G2,  ms
+  {  70,  90,  90, 110, 110,  90,  90,  70, 300 }, // re-establish the standing pose this action assumes
   { 120,  90,  90, 110,  60,  90,  90,  70, 500 }, // leg1,2 down
   { 120,  70,  70, 110,  60,  70,  70,  70, 500 }, // body turn left
   { 120, 110, 110, 110,  60, 110, 110,  70, 500 }, // body turn right
@@ -188,9 +196,10 @@ const int Servo_Prg_10[][ALLMATRIX] PROGMEM = {
 };
 
 // Push up
-const int Servo_Prg_11_Step = 13;
+const int Servo_Prg_11_Step = 14;
 const int Servo_Prg_11[][ALLMATRIX] PROGMEM = {
   // G14, G12, G13, G15, G16,  G5,  G4,  G2,  ms
+  {  70,  90,  90, 110, 110,  90,  90,  70, 300 }, // re-establish the standing pose this action assumes
   {  70,  90,  90, 120, 120,  90,  90,  70,  500 }, // start
   { 100,  90,  90,  80,  80,  90,  90, 100,  600 }, // down
   {  60,  90,  90, 120, 120,  90,  90,  60,  700 }, // up
@@ -215,9 +224,10 @@ const int Servo_Prg_12[][ALLMATRIX] PROGMEM = {
 };
 
 // Dance 1
-const int Servo_Prg_13_Step = 10;
+const int Servo_Prg_13_Step = 11;
 const int Servo_Prg_13[][ALLMATRIX] PROGMEM = {
   // G14, G12, G13, G15, G16,  G5,  G4,  G2,  ms
+  {  70,  90,  90, 110, 110,  90,  90,  70, 300 }, // re-establish the standing pose this action assumes
   {  90,  90,  90,  90,  90,  90,  90,  90, 400 }, // leg1,2,3,4 up
   {  50,  90,  90,  90,  90,  90,  90,  90, 400 }, // leg1 down
   {  90,  90,  90, 130,  90,  90,  90,  90, 400 }, // leg1 up; leg2 down
@@ -231,9 +241,10 @@ const int Servo_Prg_13[][ALLMATRIX] PROGMEM = {
 };
 
 // Dance 2
-const int Servo_Prg_14_Step = 10;
+const int Servo_Prg_14_Step = 11;
 const int Servo_Prg_14[][ALLMATRIX] PROGMEM = {
   // G14, G12, G13, G15, G16,  G5,  G4,  G2,  ms
+  {  70,  90,  90, 110, 110,  90,  90,  70, 300 }, // re-establish the standing pose this action assumes
   {  70,  45, 135, 110, 110, 135,  45,  70, 320 }, // sesame-style dance stance
   {  95,  45, 135,  85, 110, 135,  45,  70, 260 }, // right side softens inward
   {  70,  45, 135, 110,  85, 135,  45,  95, 260 }, // left side softens inward
@@ -247,9 +258,10 @@ const int Servo_Prg_14[][ALLMATRIX] PROGMEM = {
 };
 
 // Dance 3
-const int Servo_Prg_15_Step = 10;
+const int Servo_Prg_15_Step = 11;
 const int Servo_Prg_15[][ALLMATRIX] PROGMEM = {
   // G14, G12, G13, G15, G16,  G5,  G4,  G2,  ms
+  {  70,  90,  90, 110, 110,  90,  90,  70, 300 }, // re-establish the standing pose this action assumes
   {  70,  45,  45, 110, 110, 135, 135,  70, 400 }, // leg1,2,3,4 back
   { 110,  45,  45,  60,  70, 135, 135,  70, 400 }, // leg1,2,3 up
   {  70,  45,  45, 110, 110, 135, 135,  70, 400 }, // leg1,2,3 down
@@ -291,6 +303,63 @@ const int Servo_Prg_16[][ALLMATRIX] PROGMEM = {
   {  70,  90,  45,  90, 110,  90,  90,  70, 200 }, // RR foot up
   {  70,  90,  90,  90, 110,  90,  90,  70, 200 }, // RR swing recovers
   {  70,  90,  90, 110, 110,  90,  90,  70, 200 }, // RR foot down -- back to start pose
+};
+
+// Sit: rear feet tuck up under the body (RR/LR knees driven toward their
+// lift/raise direction), front feet stay planted at the standing pose --
+// a real sit silhouette (haunches down, front up), not just "lie" (which
+// is a single diagonal-pair tilt, not a sit). Hips stay centered.
+// Sim-validated (sim_physics/observe.py): stayed upright, max tilt 8.0deg.
+// Self-contained: the first row re-establishes the 70/110 standing pose
+// this whole action was designed from, regardless of whatever pose the
+// robot was actually in when this was triggered (found the hard way --
+// PROGRAM_STANDBY settles at a different 60/120 pose, not 70/110, so
+// chaining these off of "standby" silently halved bow's dip and leaked
+// unintended rear-leg motion the first time this was tested for real).
+const int Servo_Prg_17_Step = 2;
+const int Servo_Prg_17[][ALLMATRIX] PROGMEM = {
+  // G14, G12, G13, G15, G16,  G5,  G4,  G2,  ms
+  {  70,  90,  90, 110, 110,  90,  90,  70, 300 }, // re-establish the standing pose this action assumes
+  {  70,  90,  90,  70, 110,  90,  90, 110, 500 }, // settle into sit -- rear knees tuck up, front stays standing
+};
+
+// Bow: front feet extend down while rear feet hold the standing pose --
+// dips the front of the body down and back up. First tuned to a 20deg
+// dip (50/130) at 350ms and reported as barely visible on real hardware --
+// not a stale-position bug (the interpolator does reach its target
+// regardless of starting pose, confirmed by reading Servo_PROGRAM_Run
+// directly), just too small and fast to read as a deliberate bow. Widened
+// to 35/145, still reported as needing to go deeper -- now pushed all the
+// way to 30/150, the exact same knee extreme sleep already uses safely on
+// real hardware (not going past a value already proven there).
+// Self-contained -- see Servo_Prg_17's comment above for why the leading
+// standing-pose row matters.
+const int Servo_Prg_18_Step = 4;
+const int Servo_Prg_18[][ALLMATRIX] PROGMEM = {
+  // G14, G12, G13, G15, G16,  G5,  G4,  G2,  ms
+  {  70,  90,  90, 110, 110,  90,  90,  70, 300 }, // re-establish the standing pose this action assumes
+  {  30,  90,  90, 110, 150,  90,  90,  70, 450 }, // dip -- front knees extend down, rear unchanged
+  {  30,  90,  90, 110, 150,  90,  90,  70, 400 }, // hold the bow
+  {  70,  90,  90, 110, 110,  90,  90,  70, 450 }, // recover -- back to standing
+};
+
+// Shake / wiggle: a small-amplitude hip twist combined with all 4 knees
+// bouncing together (compress on one beat, extend on the other) --
+// deliberately different from dance2, which only moves knees, and from
+// the original hip-only version of this, which didn't move the knees at
+// all. A body wiggle/shimmy in place, not a locomotion gait.
+// Sim-validated: stayed upright, max tilt 1.8deg. Self-contained -- see
+// Servo_Prg_17's comment above for why the leading standing-pose row
+// matters.
+const int Servo_Prg_19_Step = 6;
+const int Servo_Prg_19[][ALLMATRIX] PROGMEM = {
+  // G14, G12, G13, G15, G16,  G5,  G4,  G2,  ms
+  {  70,  90,  90, 110, 110,  90,  90,  70, 300 }, // re-establish the standing pose this action assumes
+  {  60, 105,  75, 120, 120,  75, 105,  60, 150 }, // twist one way + knees compress together
+  {  80,  75, 105, 100, 100, 105,  75,  80, 150 }, // twist the other way + knees extend together
+  {  60, 105,  75, 120, 120,  75, 105,  60, 150 },
+  {  80,  75, 105, 100, 100, 105,  75,  80, 150 },
+  {  70,  90,  90, 110, 110,  90,  90,  70, 200 }, // recover -- back to standing
 };
 
 #endif
