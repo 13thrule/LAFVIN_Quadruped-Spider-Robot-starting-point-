@@ -2,3 +2,4 @@ sim_physics/venv/
 __pycache__/
 sim_physics/reference_stl/*.stl
 sim_physics/snapshot_*.png
+sim_physics/video_frames/
