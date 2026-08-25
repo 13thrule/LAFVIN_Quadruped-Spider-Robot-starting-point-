@@ -74,6 +74,20 @@ void SpiderBotMotion::Servo_PROGRAM_Run(const int iMatrix[][ALLMATRIX], int iSte
         int InterTotalTime = iMatrix[MainLoopIndex][ALLMATRIX - 1];
         int InterDelayCounter = InterTotalTime / BASEDELAYTIME;
 
+        // Telemetry for external tools (e.g. the PyBullet sim) to mirror
+        // this robot live: one line per keyframe, target angles + duration.
+        // The receiver already knows how to interpolate the same way this
+        // function does, so streaming discrete keyframes here (not every
+        // 10ms interpolation tick) is enough for a smooth live mirror
+        // without flooding serial or risking slowing down the real-time
+        // servo loop below.
+        Serial.print(F("POS:"));
+        for (int i = 0; i < ALLSERVOS; i++) {
+            Serial.print(iMatrix[MainLoopIndex][i]);
+            Serial.print(',');
+        }
+        Serial.println(InterTotalTime);
+
         for (int InterStepLoop = 0; InterStepLoop < InterDelayCounter; InterStepLoop++) {
             // Keep the web server responsive even while a blocking motion
             // sequence is being played back.
