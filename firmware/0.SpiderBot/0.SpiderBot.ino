@@ -29,10 +29,16 @@ static int lastIrProgramId = PROGRAM_NONE;
 
 // The current avoidance wiring uses TX as TRIG and RX as ECHO, so the
 // ultrasonic sensor and the USB serial port share the same two physical
-// pins. They cannot be used at the same time: unplug the ultrasonic sensor
-// whenever the serial port is needed (flashing, debug logging, or the
-// calibration() helper below), same as this kit's own flashing instructions
-// already require.
+// pins. They cannot be used at the same time -- and it's not just a
+// physical-connection thing: pinMode(TRIG_PIN, OUTPUT) below reprograms
+// GPIO1's pin mux away from the UART-TX function regardless of whether a
+// sensor is actually wired to it, which silences Serial output (including
+// spiderbot_motion.cpp's POS: telemetry) even with the sensor unplugged.
+// Set this to 0 to skip claiming the ultrasonic pins at boot and get a
+// working serial link (telemetry, calibration); back to 1 for normal
+// obstacle-avoidance operation. Physically unplug the ultrasonic sensor
+// whenever this is 0, same as this kit's own flashing instructions require.
+#define ENABLE_ULTRASONIC 0
 static const uint8_t ULTRASONIC_TRIG_PIN = 1;  // TX
 static const uint8_t ULTRASONIC_ECHO_PIN = 3;  // RX
 static const unsigned long ULTRASONIC_TIMEOUT_US = 30000;
@@ -85,9 +91,11 @@ void setup()
 {
   DEBUG_SERIAL_BEGIN(9600);
   irrecv.enableIRIn();
+#if ENABLE_ULTRASONIC
   pinMode(ULTRASONIC_TRIG_PIN, OUTPUT);
   pinMode(ULTRASONIC_ECHO_PIN, INPUT);
   digitalWrite(ULTRASONIC_TRIG_PIN, LOW);
+#endif
   DEBUG_PRINTLN("QuadBot-E Start!");
   delay(1000);
 
@@ -185,6 +193,7 @@ void loop()
 // Returns -1 when no echo is received before timeout.
 static float measureAvoidDistanceCm()
 {
+#if ENABLE_ULTRASONIC
   digitalWrite(ULTRASONIC_TRIG_PIN, LOW);
   delayMicroseconds(2);
   digitalWrite(ULTRASONIC_TRIG_PIN, HIGH);
@@ -197,6 +206,12 @@ static float measureAvoidDistanceCm()
   }
 
   return durationUs / 58.0f;
+#else
+  // TX/RX are serving as the serial link right now (see ENABLE_ULTRASONIC),
+  // not the ultrasonic sensor -- driving them here would corrupt whatever
+  // is being transmitted, so just report "no echo" instead.
+  return -1.0f;
+#endif
 }
 
 // Blocking avoidance mode:
